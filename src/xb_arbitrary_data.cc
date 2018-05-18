@@ -94,6 +94,8 @@ namespace XB{
 		memcpy( _buf, given._buf, given._buf_sz );
 	}
 	
+	//TODO: there's a contructor missing.
+	
 	//dtor:
 	adata::~_xb_arbitrary_data(){
 		if( _buf ) free( _buf );
@@ -323,7 +325,7 @@ namespace XB{
 	
 	//----------------------------------------------------------------------------
 	//push a field onto the whole array
-	void push_indexer( adata_field &given ){
+	void adata_uniarr::push_indexer( adata_field &given ){
 		//indexer shared --> control to this class!
 		if( _indexer.diffs[phash8( given.name ) < 0 ) _indexer.names.push_back( given );
 		
@@ -335,7 +337,7 @@ namespace XB{
 	
 	//----------------------------------------------------------------------------
 	//remove a field from all entries
-	adata_field pop_indexer(){
+	adata_field adata_uniarr::pop_indexer(){
 		if( _indexer.diffs[phash8( given.name ) < 0 ) return { "", 0 }; //empty field
 		adata_field fld = _indexer.names.back();
 		for( int i=0; i < size(); ++i ) this->at(i).rmfield( fld );
@@ -346,14 +348,14 @@ namespace XB{
 	
 	//----------------------------------------------------------------------------
 	//push and SUBSCRIBE an arbitrary data
-    void push_sub( const adata &given ){
+    void adata_uniarr::push_back( const adata &given ){
 		this->push_back( given );
 		back().subscribe_uniarr( this );
 	}
 	
 	//----------------------------------------------------------------------------
 	//pop and unsubscribe (pop_back will destroy the element)
-    adata pop_usub(){
+    adata adata_uniarr::pop_back(){
 		adata ad = this->back();
 		this->pop_back();
 		ad->unsubscribe_uniarr();
@@ -361,13 +363,66 @@ namespace XB{
 	}
 	
 	//----------------------------------------------------------------------------
-	//if you think you need this function, you probably did something wrong
-    void subscribe_all(){
-		for( int i=0; i < size(); ++i ) this->at(i).subscribe_uniarr( this );
+	_ua_iter adata_uniarr::insert( _ua_iter pos, adata &val ){
+		val.subscribe_uniarr( this );
+		return _ua.insert( pos, val );
 	}
 	
+	//----------------------------------------------------------------------------
+	_ua_iter adata_uniarr::insert( _ua_iter pos, _ua_iter first, _ua_iter last ){
+		for( _ua_iter i=firt; i != last; ++i ) i->subscribe_uniarr( this );
+		return _ua.insert( pos, first, last );
+	};
+	
+	//----------------------------------------------------------------------------
+	_ua_iter adata_uniarr::erase( _ua_iter pos ){
+		pos->unsubscribe_uniarr();
+		return _ua.erase( pos );
+	}
+	
+	//----------------------------------------------------------------------------
+	_ua_iter adata_uniarr::erase( _ua_iter first, _ua_iter last ){
+		for( _ua_iter i=first; i != last; ++i ) i->unsubscribe_uniarr();
+		return _ua.erase( first, last );
+	}
+	
+	//----------------------------------------------------------------------------
+	//operators:
+	
+	//----------------------------------------------------------------------------
+	//merge horizontally two uniform arrays (operator+)
+	adata_uniarr &adata_uniarr::operator+( const adata_uniarr &right ){
+		if( right.empty() || _ua.empty() ) return *this;
+		if( right.size() != _ua.size() )
+			throw( error e( "Mismatching lengths!", "XB::adata_uniarr" );
+		
+		
+		adata_indexer iright = *right._indexer;
+		for( int i=0; i < iright.size(); ++i )
+			if( iright.diffs[i] >= 0 ) iright.diffs[i] += right._buf_sz;
+		_indexer = _indexer + iright;
+		
+		_ua.resize( ( _ua.size() >= right.size() )? _ua.size() : right.size() );
+		unsigned new_buf_sz = _ua[0]._buf_sz + right._ua[0]._buf_sz;
+		unsigned right_buf_sz = right._ua[0]._buf_sz;
+		
+		for( int i=0; i < _ua.size(); ++i ){
+			if( !memcmp( &_ua[i].n, &right[i].n, sizeof( event_holder ) ) )
+				throw( error( "Structures relate to different events!", "XB::adata_uniarr" ) );
+			_ua[i]._buf = realloc( _ua[i]._buf, new_buf_sz );
+			memcpy( (char*)_ua[i]._buf + _ua[i]._buf_sz, right[i]._buf, right_buf_sz );
+		}
+		
+		return *this;
+	}
+	
+	//----------------------------------------------------------------------------
+	//assignment
+	adata_uniarr &adata_uniarr::operator=( const adata_uniarr &right ){
+		
+	
 	//============================================================================
-	//the two friend functions.
+	//the three friend functions.
 
 	//----------------------------------------------------------------------------
 	//make the linearized buffer:
@@ -447,4 +502,28 @@ namespace XB{
 		
 		return nf; //useless...
 	}
+	
+	//----------------------------------------------------------------------------
+	//the structure merger!
+	//NOTE: the merger is ORDERED. merges two into one
+	adata adata_merge( const adata &one, const adata &two ){
+		if( !memcmp( &one.n, &two.n, sizeof( event_holder ) ) )
+			throw( error( "structures relate to  events!", "XB::adata_merge" ) );
+		
+		//make the new indexer
+		adata merged( one );
+		merged._fields = new adata_indexer( one._fields );
+		merged._is_fields_owned = 1;
+		adata_indexer itwo = *two._fields;
+		
+		for( int i=0; i < itwo.names.size(); ++i )
+			if( itwo.diffs[i] >= 0 ) itwo.diffs[i] += one._buf_sz;
+		
+		*merged.fields = *merged._fields + itwo; //NOTE: this will throw if not compatible
+		merged._buf = realloc( merged._buf, merged._buf_sz + two._buf_sz );
+		memcpy( (char*)merged._buf + merged._buf_sz, two._buf, two._buf_sz );
+		
+		return merged;
+	}
+		
 } //end of namespace

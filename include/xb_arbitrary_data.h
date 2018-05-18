@@ -28,10 +28,10 @@
 /*TODO LIST:
 0)   adapt for pointer ofssets instead of pointers [x]
 1)   adapt for pointed indexer                     [x]
-1.5) implement convenience into indexer            [/]
+1.5) implement convenience into indexer            [x]
 2)   implement un- and subscribe methods of adata  [x]
 3)   implement adata_uniarr                        [x]
-4)   implement the merge function                  [ ]
+4)   implement the merge function                  [x]
 */
 
 namespace XB{
@@ -81,6 +81,8 @@ namespace XB{
 	//the main thing, the class
 	typedef class _xb_arbitrary_data : public event_holder {
 		public:
+			friend class _xb_arbitrary_data_uniform_array;
+			
 			//ctors, dtor
 			_xb_arbitrary_data();
 			_xb_arbitrary_data( const adata_field *fld_array, size_t n_fld );
@@ -140,9 +142,8 @@ namespace XB{
 			friend int adata_getlbuf( void **linbuf, const _xb_arbitrary_data &given );
 			friend int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf );
 			//TODO: and one for merge
-			/*friend _xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
-			                                       const _xb_arbitrary_data &two );*/
-			friend class _xb_arbitrary_data_uniform_array;
+			friend _xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
+			                                       const _xb_arbitrary_data &two );
 		private:
 			//the data buffer
 			//data is stored [int size|data]
@@ -166,8 +167,9 @@ namespace XB{
 	//----------------------------------------------------------------------------
     //an array of UNIFORM adata entries --this should be the way to use this
     //struct since the indexer has been rendered external
-	//TODO: decide whether it's OK for it to inherit or enclose the std::vector
-    typedef class _xb_arbitrary_data_uniform_array : public std::vector< adata > {
+	typedef std::vector< adata > _ua_type;
+	typedef _ua_type::iterator _ua_iter;
+    typedef class _xb_arbitrary_data_uniform_array {
 		public:
             friend class adata;
             
@@ -178,6 +180,8 @@ namespace XB{
 			                                  const adata_indexer &indexer ):
                 std::vector< adata_field >( nb_elements ),
                 adata_indexer( indexer  ) {};
+			_xb_arbitrary_data_uniform_array &operator=( const _xb_arbitrary_data_uniform_array& );
+			_xb_arbitrary_data_uniform_array &operator+( _xb_arbitrary_data_uniform_array &right );
 			
 			//NOTE: invoking set_indexer will reset ALL members!
 			void set_indexer( const adata_indexer &given );
@@ -185,13 +189,29 @@ namespace XB{
 			adata_field pop_indexer(); //pops the last element of indexer
 			adata_indexer get_indexer() { return _indexer; };
 			//NOTE: where are the signle field operations?
-			//      all members of an array SHARE an indexer and can modify it
+			//      DANGER all members of an array SHARE an indexer and can modify it
 			
-			void push_sub( const adata &given ); //push AND SUBSCRIBE
-			adata pop_usub(); //push AND UNSIBSCRIBE (the other pop destroys)
-			void subscribe_all(); //subscribe all members, if you doubt there are some not subscribed.
+			//goodies with un- and subscription
+			void push_back( const adata &given );
+			adata pop_back();
+			_ua_iter insert( _ua_iter pos, adata &val );
+			_ua_iter insert( _ua_iter pos, _ua_iter first, _ua_iter last );
+			_ua_iter erase( _ua_iter pos );
+			_ua_iter erase( _ua_iter first, _ua_iter last );
+			
+			//some forwarding of the underlying vector
+			adata &operator[]( unsigned i ){ return _ua[i]; };
+			adata &at( unsigned i ){ return _ua.at(i); };
+			unsigned size(){ return _ua.size(); };
+			_ua_iter begin() { return _ua.begin(); };
+			_ua_iter end() { return _ua.end(); };
+			adata &front(){ return _ua.front(); };
+			adata &back(){ return _ua.back(); };
+			bool empty(){ return _ua.empty(); };
+			void resize( unsigned n ){ _ua.resize( n ); };
 		private:
 			adata_indexer _indexer;
+            _ua_type _ua;
 	} adata_uniarr;
 	
 	//----------------------------------------------------------------------------
@@ -203,8 +223,8 @@ namespace XB{
 	int adata_getlbuf( void **linbuf, const _xb_arbitrary_data &given );
 	int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf,
                         adata_indexer *indexer = NULL );
-	/*_xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
-	                                const _xb_arbitrary_data &two );*/
+	_xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
+	                                const _xb_arbitrary_data &two );
 		
 }
 #endif
