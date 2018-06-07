@@ -10,27 +10,69 @@ TEST = $(PROGS_HOME)/test
 GNUPLOT_I_HOME = /usr/local/gnuplot_i
 
 #define the targets
-PROGRAMS = xb_data_translator xb_run_cluster xb_make_spc xb_doppc xb_do_cut xb_trigger_siv
-TESTS = xb_check_nn  xb_view_ball xb_view_cluster xb_energy_list xb_try_nn_cluster xb_try_nn_clusterZ xb_try_kmeans_cluster test_xb_cuts xb_draw_cutZ xb_try_parse xb_try_sim_reader
-OBJECTS = xb_error xb_data xb_io xb_ball xb_cluster xb_doppler_corr xb_cut_typedefs xb_cut xb_apply_cut xb_parse_cnf_file xb_tpat
+PROGRAMS = xb_data_translator xb_run_cluster xb_make_spc xb_doppc xb_do_cut xb_trigger_siv xb_getarb xb_match
+TESTS = xb_check_nn  xb_view_ball xb_view_cluster xb_energy_list xb_try_nn_cluster xb_try_nn_clusterZ xb_try_kmeans_cluster test_xb_cuts xb_draw_cutZ xb_try_parse xb_try_sim_reader xb_test_adata
+OBJECTS = xb_error xb_data xb_io xb_ball xb_cluster xb_doppler_corr xb_cut_typedefs xb_cut xb_apply_cut xb_parse_cnf_file xb_tpat xb_adata
 GNUPLOT_OBJS = xb_draw_cluster_ball xb_draw_cut xb_draw_gsl_histogram xb_make_spc__cmd_line
 OBJ_W_ROOT = xb_reader
 LIBRARIES = libxb_core libxb_viz libxb_root
-BINARIES = $(BIN)/xb_cluster.o $(BIN)/xb_error.o $(BIN)/xb_data.o $(BIN)/xb_io.o $(BIN)/xb_ball.o $(BIN)/xb_doppler_corr.o $(BIN)/xb_cut_typedefs.o $(BIN)/xb_cut.o $(BIN)/xb_apply_cut.o $(BIN)/xb_parse_cnf_file.o $(BIN)/xb_tpat.o
+BINARIES = $(BIN)/xb_cluster.o $(BIN)/xb_error.o $(BIN)/xb_data.o $(BIN)/xb_io.o $(BIN)/xb_ball.o $(BIN)/xb_doppler_corr.o $(BIN)/xb_cut_typedefs.o $(BIN)/xb_cut.o $(BIN)/xb_apply_cut.o $(BIN)/xb_parse_cnf_file.o $(BIN)/xb_tpat.o $(BIN)/xb_adata.o
 GNUPLOT_BINS = $(BIN)/xb_draw_cluster_ball.o $(BIN)/xb_draw_cut.o $(BIN)/xb_draw_gsl_histogram.o $(BIN)/xb_make_spc__cmd_line.o
 ROOT_BINS = $(BIN)/xb_reader.o
 GNUPLOT_I = $(GNUPLOT_I_HOME)/gnuplot_i.o
 
 #compiler and flags
-CXX = g++
-CXXFLAGS = -I$(INCLUDE) -L$(LIB) -fopenmp -Wno-write-strings -lgsl -lgslcblas -lm -lCGAL -lgmp -std=c++11 -ggdb
-ROOT_CXXFLAGS = `root-config --cflags | sed 's/-stdlib=libc++//g'`
+CXXFLAGS = -I$(INCLUDE) -std=c++11 -ggdb
+LDFLAGS = -L$(LIB) -Wno-write-strings -lgsl -lgslcblas -lm -lCGAL -lgmp
+ROOT_CXXFLAGS = `root-config --cflags`
 ROOT_CXXFLAGS += -I $(FAIRROOTPATH)/include
-FAIR_LIBS = -lBaseMQ -lBase -lEventDisplay -lfairmq_logger -lFairMQ -lFairMQTest -lFairRutherford -lFairTestDetector -lFairTools -lGeane -lGen -lGeoBase -lMbsAPI -lMCStack -lParBase -lParMQ -lPassive -lPixel -lTrkBase
-R3B_LIBS = -lELILuMon -lField -lR3Bbase -lR3BCalifa -lR3BData -lR3BDch -lR3BdTof -lR3BEvtVis -lR3BFi4 -lR3BGen -lR3BGfi -lR3BLand -lR3BLos -lR3BMfi -lR3BmTof -lR3BNeuland -lR3BPassive -lR3BPlist -lR3BPsp -lR3BSTaRTra -lR3BTCal -lR3BTof -lR3BTra -lR3BXBall -ltimestitcher
+FAIR_LIBS = -lFairTools -lParBase -lBase
+R3B_LIBS = -lELILuMon -lField -lR3Bbase -lR3BCalifa -lR3BData -lR3BDch -lR3BdTof -lR3BEvtVis -lR3BGen -lR3BGfi -lR3BLand -lR3BLos -lR3BMfi -lR3BmTof -lR3BNeulandClustering -lR3BNeulandDigitizing -lR3BNeulandReconstruction -lR3BNeulandShared -lR3BNeulandSimulation -lR3BNeulandUnpack -lR3BPassive -lR3BPsp -lR3BStartrack -lR3BTCal -lR3BTof -lR3BTra -lR3BXBall -ltimestitcher
 ROOT_LDFLAGS = `root-config --glibs | sed 's/-stdlib=libc++//g'` -L $(FAIRROOTPATH)/lib
 ROOT_FLAGS = $(ROOT_LDFLAGS) $(ROOT_CXXFLAGS) $(FAIR_LIBS) $(R3B_LIBS)
 GNUPLOT_FLAGS = -I$(GNUPLOT_I_HOME)/src
+
+ifneq "$(R3BROOTPATH)" ""
+	ROOT_CXXFLAGS += -I $(R3BROOTPATH)/include -L $(R3BROOTPATH)/lib
+endif
+
+#gcc/clang tuning
+compiler = $(shell $(CXX) --version 2>/dev/null | grep -o LLVM)
+ifneq "$(compiler)" "LLVM"
+	CXXFLAGS += -fopenmp -frounding-math
+endif
+
+#-----------------------------------------------------------------------
+#collective operations
+.PHONY: all
+all: $(OBJECTS) $(LIBRARIES) $(PROGRAMS)
+
+.PHONY: libs
+libs: $(LIBRARIES)
+
+.PHONY: test
+test: $(OBJECTS) $(TESTS)
+
+.PHONY: install
+install :
+	./install.sh
+
+.PHONY: uninstall
+uninstall :
+	rm -f /usr/local/lib/libxb_core.so
+	rm -f /usr/local/lib/libxb_viz.so
+	rm -f /usr/local/lib/libxb_root.so
+	rm -f /usr/lib/libxb_core.so
+	rm -f /usr/lib/libxb_viz.so
+	rm -f /usr/lib/libxb_root.so
+	rm -f /usr/lib64/libxb_core.so
+	rm -f /usr/lib64/libxb_viz.so
+	rm -f /usr/lib64/libxb_root.so
+
+.PHONY: clean
+clean:
+	rm -rf $(BIN)/* $(PROGRAMS) $(TESTS) $(LIB)/*
+	rm -rf *.dSYM
 
 #recipes
 #----------------------------------------------------------------------
@@ -83,104 +125,85 @@ xb_make_spc__cmd_line :
 xb_tpat :
 	$(CXX) $(SRC)/xb_tpat.cc $(CXXFLAGS) -fPIC -c -o $(BIN)/xb_tpat.o
 
+xb_adata :
+	$(CXX) $(SRC)/xb_arbitrary_data.cc $(CXXFLAGS) -fPIC -c -o $(BIN)/xb_adata.o
+
 #----------------------------------------------------------------------
 #libraries
 libxb_core : $(OBJECTS)
-	$(CXX) $(BINARIES) $(CXXFLAGS) -shared -o $(LIB)/libxb_core.so
+	$(CXX) $(BINARIES) $(CXXFLAGS) $(LDFLAGS) -shared -o $(LIB)/libxb_core.so
 
 libxb_viz : libxb_core $(GNUPLOT_OBJS)
-	$(CXX) $(GNUPLOT_BINS) $(CXXFLAGS) $(GNUPLOT_I) $(GNUPLOT_FLAGS) -L$(LIB) -lxb_core  -shared -o $(LIB)/libxb_viz.so
+	$(CXX) $(GNUPLOT_BINS) $(CXXFLAGS) $(LDFLAGS) $(GNUPLOT_I) $(GNUPLOT_FLAGS) -L$(LIB) -lxb_core  -shared -o $(LIB)/libxb_viz.so
 
 libxb_root : libxb_core $(OBJ_W_ROOT)
-	$(CXX) $(ROOT_BINS) $(CXXFLAGS) $(ROOT_FLAGS) -L$(LIB) -lxb_core -shared -o $(LIB)/libxb_root.so
+	$(CXX) $(ROOT_BINS) $(CXXFLAGS) $(LDFLAGS) $(ROOT_FLAGS) -L$(LIB) -lxb_core -shared -o $(LIB)/libxb_root.so
 
 #----------------------------------------------------------------------
 #programs
 xb_data_translator : libxb_core libxb_root
-	$(CXX) -lxb_core -lxb_root $(SRC)/xb_data_translator.cpp $(CXXFLAGS) $(ROOT_FLAGS) -o xb_data_translator
+	$(CXX) -lxb_core -lxb_root $(SRC)/xb_data_translator.cpp $(CXXFLAGS) $(LDFLAGS) $(ROOT_FLAGS) -o xb_data_translator
+	
+xb_getarb : libxb_core libxb_root
+	$(CXX) -lxb_core -lxb_root $(SRC)/xb_getarb.cpp $(CXXFLAGS) $(LDFLAGS) $(ROOT_FLAGS) -o xb_getarb
 
 xb_run_cluster : libxb_core libxb_viz
-	$(CXX) -lxb_core -lxb_viz $(SRC)/xb_run_cluster.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o xb_run_cluster
+	$(CXX) -lxb_core -lxb_viz $(SRC)/xb_run_cluster.cpp $(CXXFLAGS) $(LDFLAGS) $(GNUPLOT_FLAGS) -o xb_run_cluster
 
 xb_make_spc : libxb_core libxb_viz
-	$(CXX) -lxb_core -lxb_viz $(SRC)/xb_make_spc.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o xb_make_spc
+	$(CXX) -lxb_core -lxb_viz $(SRC)/xb_make_spc.cpp $(CXXFLAGS) $(LDFLAGS) $(GNUPLOT_FLAGS) -o xb_make_spc
 
 xb_doppc : libxb_core
-	$(CXX) $(SRC)/xb_doppc.cc $(CXXFLAGS) -lxb_core -c -o $(BIN)/xb_doppc.o
-	$(CXX) -lxb_core $(BIN)/xb_doppc.o $(SRC)/xb_doppc.cpp $(CXXFLAGS) -o xb_doppc
+	$(CXX) $(SRC)/xb_doppc.cc $(CXXFLAGS) $(LDFLAGS) -lxb_core -c -o $(BIN)/xb_doppc.o
+	$(CXX) -lxb_core $(BIN)/xb_doppc.o $(SRC)/xb_doppc.cpp $(CXXFLAGS) $(LDFLAGS) -o xb_doppc
 
 xb_do_cut : libxb_core libxb_viz
-	$(CXX) -lxb_core -lxb_viz $(SRC)/xb_do_cut.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o xb_do_cut
+	$(CXX) -lxb_core -lxb_viz $(SRC)/xb_do_cut.cpp $(CXXFLAGS) $(LDFLAGS) $(GNUPLOT_FLAGS) -o xb_do_cut
 
 xb_trigger_siv : libxb_core
-	$(CXX) -lxb_core $(SRC)/xb_trigger_siv.cpp $(CXXFLAGS) -o xb_trigger_siv
+	$(CXX) -lxb_core $(SRC)/xb_trigger_siv.cpp $(CXXFLAGS) $(LDFLAGS) -o xb_trigger_siv
+
+xb_match : libxb_core
+	$(CXX) -lxb_core $(SRC)/xb_match.cpp $(CXXFLAGS) $(LDFLAGS) -o xb_match
 
 #----------------------------------------------------------------------
 #test programs
 xb_check_nn: xb_ball xb_error
-	$(CXX) $(BIN)/xb_ball.o $(BIN)/xb_error.o $(TEST)/xb_check_nn.cpp $(CXXFLAGS) -o $(TEST)/xb_check_nn
+	$(CXX) $(BIN)/xb_ball.o $(BIN)/xb_error.o $(TEST)/xb_check_nn.cpp $(CXXFLAGS) $(LDFLAGS) -o $(TEST)/xb_check_nn
 
 xb_view_ball: xb_ball xb_error $(GNUPLOT_I)
-	$(CXX) $(BIN)/xb_ball.o $(BIN)/xb_error.o $(TEST)/xb_view_ball.cpp $(GNUPLOT_I) $(CXXFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_view_ball
+	$(CXX) $(BIN)/xb_ball.o $(BIN)/xb_error.o $(TEST)/xb_view_ball.cpp $(GNUPLOT_I) $(CXXFLAGS) $(LDFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_view_ball
 
 xb_view_cluster: $(OBJECTS) $(GNUPLOT_OBJS) $(GNUPLOT_I)
-	$(CXX) $(BINARIES) $(GNUPLOT_BINS) $(GNUPLOT_I) $(TEST)/xb_view_cluster.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_view_cluster
+	$(CXX) $(BINARIES) $(GNUPLOT_BINS) $(GNUPLOT_I) $(TEST)/xb_view_cluster.cpp $(CXXFLAGS) $(LDFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_view_cluster
 
 xb_energy_list: $(OBJECTS)
 	$(CXX) $(BINARIES) $(TEST)/xb_energy_list.cpp $(CXXFLAGS) -o $(TEST)/xb_energy_list
 
 xb_try_nn_cluster: $(OBJECTS) $(GNUPLOT_OBJS) $(GNUPLOT_I)
-	$(CXX) $(BINARIES) $(GNUPLOT_BINS) $(GNUPLOT_I) $(TEST)/xb_try_nn_cluster.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_try_nn_cluster
+	$(CXX) $(BINARIES) $(GNUPLOT_BINS) $(GNUPLOT_I) $(TEST)/xb_try_nn_cluster.cpp $(CXXFLAGS) $(LDFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_try_nn_cluster
 
 xb_try_nn_clusterZ: $(OBJECTS) $(GNUPLOT_OBJS) $(GNUPLOT_I)
-	$(CXX) $(BINARIES) $(GNUPLOT_BINS) $(GNUPLOT_I) $(TEST)/xb_try_nn_clusterZ.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_try_nn_clusterZ
+	$(CXX) $(BINARIES) $(GNUPLOT_BINS) $(GNUPLOT_I) $(TEST)/xb_try_nn_clusterZ.cpp $(CXXFLAGS) $(LDFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_try_nn_clusterZ
 
 xb_try_kmeans_cluster: $(OBJECTS) $(GNUPLOT_OBJS) $(GNUPLOT_I)
-	$(CXX) $(BINARIES) $(GNUPLOT_BINS) $(GNUPLOT_I) $(TEST)/xb_try_kmeans_cluster.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_try_kmenans_cluster
+	$(CXX) $(BINARIES) $(GNUPLOT_BINS) $(GNUPLOT_I) $(TEST)/xb_try_kmeans_cluster.cpp $(CXXFLAGS) $(LDFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_try_kmenans_cluster
 
 test_xb_cuts: $(OBJECTS)
 	$(CXX) $(BINARIES) $(TEST)/test_xb_cuts.cpp $(CXXFLAGS) -o $(TEST)/test_xb_cuts
 
 xb_draw_cutZ: $(OBJECTS) $(GNUPLOT_OBJS) $(GNUPLOT_I)
-	$(CXX) $(BINARIES) $(GNUPLOT_BINS) $(GNUPLOT_I) $(TEST)/xb_draw_cutZ.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_draw_cutZ
+	$(CXX) $(BINARIES) $(GNUPLOT_BINS) $(GNUPLOT_I) $(TEST)/xb_draw_cutZ.cpp $(CXXFLAGS) $(LDFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_draw_cutZ
 
 xb_try_parse: $(OBJECTS) $(GNUPLOT_OBJS) $(GNUPLOT_I)
-	$(CXX) $(BINARIES) $(GNUPLOT_BINS) $(GNUPLOT_I) $(TEST)/xb_try_parse.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_try_parse
+	$(CXX) $(BINARIES) $(GNUPLOT_BINS) $(GNUPLOT_I) $(TEST)/xb_try_parse.cpp $(CXXFLAGS) $(LDFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_try_parse
 
 xb_try_sim_reader: $(OBJECTS) $(GNUPLOT_OBJS) $(GNUPLOT_I) $(OBJ_W_ROOT)
-	$(CXX) $(ROOT_BINS) $(BINARIES) $(GNUPLOT_BINS) $(GNUPLOT_I) $(TEST)/xb_try_sim_reader.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) $(ROOT_FLAGS) -o $(TEST)/xb_try_sim_reader
+	$(CXX) $(ROOT_BINS) $(BINARIES) $(GNUPLOT_BINS) $(GNUPLOT_I) $(TEST)/xb_try_sim_reader.cpp $(CXXFLAGS) $(LDFLAGS) $(GNUPLOT_FLAGS) $(ROOT_FLAGS) -o $(TEST)/xb_try_sim_reader
 
 xb_cml: libxb_core libxb_viz
-	$(CXX) -lxb_viz -lxb_core $(TEST)/xb_cml.cpp $(CXXFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_cml
+	$(CXX) -lxb_viz -lxb_core $(TEST)/xb_cml.cpp $(CXXFLAGS) $(LDFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_cml
 
-#-----------------------------------------------------------------------
-#collective operations
-.PHONY: all
-all: $(OBJECTS) $(LIBRARIES) $(PROGRAMS)
-
-.PHONY: libs
-libs: $(LIBRARIES)
-
-.PHONY: test
-test: $(OBJECTS) $(TESTS)
-
-.PHONY: install
-install :
-	./install.sh
-
-.PHONY: uninstall
-uninstall :
-	rm -f /usr/local/lib/libxb_core.so
-	rm -f /usr/local/lib/libxb_viz.so
-	rm -f /usr/local/lib/libxb_root.so
-	rm -f /usr/lib/libxb_core.so
-	rm -f /usr/lib/libxb_viz.so
-	rm -f /usr/lib/libxb_root.so
-	rm -f /usr/lib64/libxb_core.so
-	rm -f /usr/lib64/libxb_viz.so
-	rm -f /usr/lib64/libxb_root.so
-
-.PHONY: clean
-clean:
-	rm -rf $(BIN)/* $(PROGRAMS) $(TESTS) $(LIB)/*
+xb_test_adata : libxb_core libxb_root
+	$(CXX) -lxb_core -lxb_root $(TEST)/xb_test_adata.cpp $(CXXFLAGS) $(LDFLAGS) $(ROOT_FLAGS) -o $(TEST)/xb_test_adata
 

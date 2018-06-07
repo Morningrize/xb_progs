@@ -6,67 +6,142 @@
 #define XB_TPAT__H
 
 #include <string.h>
+#include <stdio.h> //that's unusual, but need FILE and printf.
+#include <math.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+
 #include <vector>
 #include <functional>
 #include <algorithm>
 
+#include <gsl/gsl_histogram.h>
+
 #include "xb_data.h"
+#include "xb_error.h"
 
-//define collection of all the trigger conditions
-//as found in the land02 website
-//On spill condition (beam is on)
-//On true, the trigger contition is matched
-#define S_UNSET		0x0000 //meta contition: on-spill unset;	spill
-#define S_MINBIAS	0x0001 //minimum bias (is there beam);		minb
-#define S_FRAGMENT	0x0011 //is there a fragment?			frag
-#define S_FRSS8		0x1000 //FRS S8 ok				frs
-#define S_CBSUM		0x0411 //CB reports both halves			cbsum
-#define S_PROTON	0x0051 //Is it a proton?			prt
-#define S_GBPILEUP	0x0001 //Good beam -- pileup flag (DODGY)	gbpup
-#define S_PIX		0x2001 //Silicon detector reporting		pix
-#define S_NEUTRON	0x0015 //Do we have a neutron in LAND?		ntr
-
-//off spill conditions
-#define C_UNSET		0x0001 //meta condition: off-spill unset	offsp
-#define C_CBMUON	0x0800 //We have a muon in the CB		cbmu
-#define C_LANDCOSM	0x0008 //We have a cosmic in LAND		landc
-#define C_TFWCOSM	0x0020 //We have a cosmic in the ToF wall	twfc
-#define C_CBGAMMA	0x0200 //We have a gamma in CB			cbgam
-#define C_DFTCOSM	0x0080 //We have a cosmic in DTF		dftc
-#define	C_NTFCOSM	0x4000 //We have a cosmic in the New ToF	ntfc
-#define C_CBLRMUON	0x8000 //We have a stereo muon in CB		cblrmu
+/*
+How does the TPat works?
+The Tpat is a bitfield that shouldn't be used as such.
+Each of the 16 bits is a "raw" triggers, and they are as follows
+For the exact description of what each bit does FOR s412
+see the file doc/Tpat.dat
+The bit position is given in hex.
+The reaction trigger is a number given by an | on the various reaction triggers
+And it should be checked exactly -- numerically, with the == operator.
+*/
+#define POS_NOT_ROLU 0x0001
+#define PNR_PUP      0x0003 //0x3 is not a typo, it's the actual flag
+#define FRAG         0x0004
+#define LAND         0x0008
+#define FRAG_XB_SUMF 0x0010
+#define FRAG_XB_SUM  0x0020
+#define FRAG_XB_OR   0x0040
+#define PIX          0x0080
+#define LAND_COSM    0x0100
+#define TFW_COSM     0x0200
+#define NTF_COSM     0x0400
+#define XB_COSM      0x0800
+#define XB_SUM_OFFSP 0x1000
+#define PIX_OFFSP    0x2000
+//not in use #define ---          0x4000
+//not in use #define ---          0x8000
 
 namespace XB{
-
 	//----------------------------------------------------------------------------
 	//An utility that translates a string into a tpat mask
 	int str2tpat( const char *tpat_str );
+	int hex2tpat( const char *tpat_hexstr );
+	
+	//----------------------------------------------------------------------------
+	//some utilities to do the stats
+	gsl_histogram *tpat_stats_alloc(); //allocate a GSL histogram of the right size
+	void tpat_stats_free( gsl_histogram *stats ){ gsl_histogram_free( stats ); };
+	void tpat_stats_push( gsl_histogram *stats, const event_holder &hld ); //push one element
+	                                                                          //into the histom
+	void tpat_stats_printf( FILE *stream, gsl_histogram *stats ); //print the histogram to
+	                                                              //a stream.
+	
+	//a template driver for the fill
+	template< class T >
+	void tpat_stats_fill( gsl_histogram *stats, const std::vector<T> &data ){
+		for( int i=0; i < data.size(); ++i ) tpat_stats_push( stats, data.at( i ) );
+	}
 
 	//----------------------------------------------------------------------------
-	//a functional to select data and track info
-	class select_tpat : public std::unary_function < _xb_event_structure&, bool > {
+	//a functional to select data and track info, logical and
+	class select_tpat__and : public std::unary_function < _xb_event_structure&, bool > {
 		public:
-			select_tpat(): _mask( 0 ) {};
-			select_tpat( int mask ): _mask( mask ) {};
-			select_tpat( const select_tpat &given ): _mask( given._mask ) {};
-			select_tpat &operator=( const select_tpat &right ){
+			select_tpat__and(): _mask( 0 ) {};
+			select_tpat__and( int mask, char sgn = 0 ): _mask( mask ), _sgn( sgn ) {};
+			select_tpat__and( const select_tpat__and &given ): _mask( given._mask ), _sgn( given._sgn ) {};
+			select_tpat__and &operator=( const select_tpat__and &right ){
+				_mask = right._mask; _sgn = right._sgn; return *this; };
+			
+			//since this goes into a std::remove_if, return false on true.
+			bool operator()( _xb_event_structure &datum ){
+				bool val = ( datum.tpat && //prune zeros
+				             (datum.tpat & _mask) == _mask );
+				return _sgn ? val : !val;
+			};
+		private:
+			int _mask;
+			char _sgn;
+	};
+	
+	//----------------------------------------------------------------------------
+	class select_tpat__or : public std::unary_function < _xb_event_structure&, bool > {
+		public:
+			select_tpat__or(): _mask( 0 ) {};
+			select_tpat__or( int mask ): _mask( mask ) {};
+			select_tpat__or( const select_tpat__or &given ): _mask( given._mask ) {};
+			select_tpat__or &operator=( const select_tpat__or &right ){
 				_mask = right._mask; return *this; };
-			select_tpat &operator=( int right ){ _mask = right; return *this; };
 			
 			//since this goes into a std::remove_if, return false on true.
 			bool operator()( _xb_event_structure &datum ){
 				return !( datum.tpat && //prune zeros
 				          datum.tpat & _mask || 
-				          !( datum.tpat << 16 & _mask ) );
+				          !( (datum.tpat << 16) & _mask ) );
 			};
 		private:
 			int _mask;
 	};
 	
 	//----------------------------------------------------------------------------
-	//A function to run the selection.
-	int select_on_tpat( int mask, std::vector<XB::data> &xb_book );
-	int select_on_tpat( int mask, std::vector<XB::track_info> &xb_book );
+	//actually get rid of the data that doesn't match the mask
+	template< class T >
+	int select_and_tpat( int mask, std::vector<T> &xb_book ){
+		typename std::vector<T>::iterator last;
+		select_tpat__and sel( mask & 0x0000ffff ), selnot( (mask >> 16) & 0x0000ffff, 1 );
+		int sz = xb_book.size();
+		
+		if( mask & 0x0000ffff ){
+			last = std::remove_if( xb_book.begin(), xb_book.end(), sel );
+			xb_book.erase( last, xb_book.end() );
+		}
+		if( mask & 0xffff0000 ){
+			last = std::remove_if( xb_book.begin(), xb_book.end(), selnot );
+			xb_book.erase( last, xb_book.end() );
+		}
+		
+		return sz - xb_book.size();
+	}
+	
+	//----------------------------------------------------------------------------
+	//same as above, but in logical or instead of and
+	template< class T >
+	int select_or_tpat( int mask, std::vector<T> &xb_book ){
+		typename std::vector<T>::iterator last;
+		if( !(mask & 0xffff0000) ) mask |= 0xffff0000;
+		select_tpat__or sel( mask );
+		int sz = xb_book.size();
+		
+		last = std::remove_if( xb_book.begin(), xb_book.end(), sel );
+		xb_book.erase( last, xb_book.end() );
+		
+		return sz - xb_book.size();
+	}
 }
 
 #endif

@@ -45,12 +45,13 @@ namespace XB{
 	//-------------------------------------------------------------------
 	//the function that makes the ordered energy list starting from an event
 	//the length of the list is guaranteed to be the same as the length of the event.
+	//NOTE: this thing *allocates* on the heap, use free to clean up after use!
 	oed* make_energy_list( const data &evnt ){
 		//if the event is empty, return NULL
 		if( evnt.n == 0 ) return NULL;
 
 		//allocate the list
-		oed* ordered_energy_list = (oed*)malloc( evnt.n*sizeof(oed) );
+		oed* ordered_energy_list = (oed*)calloc( evnt.n, sizeof(oed) );
 		//check the allocation
 		if( ordered_energy_list == NULL ) throw error( "Memory error!", "make_energy_list" );
 	
@@ -61,7 +62,6 @@ namespace XB{
 			//this might be refined later, in dependence of what actually
 			//you can find in the data of your experiment
 			if( !evnt.empty_e ) ordered_energy_list[i].e = evnt.e[i];
-			else if( !evnt.empty_he ) ordered_energy_list[i].e = evnt.he[i];
 		
 			//get the crystal index
 			ordered_energy_list[i].i = evnt.i[i];
@@ -115,11 +115,12 @@ namespace XB{
 		//make the cluster
 		//loop on the list until you find an entry that makes sense
 		for( int i=0; i < evnt.n; ++i ){
-			if( IS_LIST_VALID( list[i] ) ){ continue; }
+			if( IS_LIST_INVALID( list[i] ) ){ continue; }
 			else{
 				kl.centroid_id = list[i].i;
 				kl.c_altitude = cb.at( kl.centroid_id ).altitude;
 				kl.c_azimuth = cb.at( kl.centroid_id ).azimuth;
+				break;
 			}
 		}
 		//check that something has been found
@@ -133,7 +134,7 @@ namespace XB{
 		for( int i=0; i < evnt.n; ++i ){
 			if( std::binary_search( neighbours, neighbours+n_neighs, evnt.i[i] ) ){ //we have a match
 				kl.crys.push_back( evnt.i[i] ); //add the crystal to the cluster
-				kl.crys_e.push_back( evnt.e[i] ? evnt.e[i] : evnt.he[i] ); //add the single energy deposit
+				kl.crys_e.push_back( evnt.e[i] ? evnt.e[i] : 0 ); //add the single energy deposit
 				++kl.n; //increment the number of crystals in the cluster
 			}
 		}
@@ -141,13 +142,98 @@ namespace XB{
 		//calculate the energy sum
 		for( int i=0; i < kl.crys_e.size(); ++i ) kl.sum_e += kl.crys_e[i];
 		
+		//a cleanup that went missing
+		free( list );
+		free( neighbours );
+		
 		return kl;
 	}
 
 	//------------------------------------------------------------------------
+	//make one cluster by "beading" the energy deposits together instead of just summing
+	//the ring of neighbours
+	cluster make_one_cluster_bead( const data &evnt, unsigned int order ){
+		oed *list = make_energy_list( evnt ), *listend = list + evnt.n; //an ordered energy list
+		unsigned int lile = evnt.n; //length of the list
+		xb_ball cb; //the crystal ball
+		
+		//init the cluster
+		cluster kl; //initiate the cluster
+		kl.centroid_id = 0; //set the cluster's centroid
+		kl.sum_e = 0; //init the sum energy to 0
+		kl.n = 0; //init the number of crystals in the cluster to 0
+		
+		if( list == NULL ) throw error( "Empty event!", "make_one_cluster_bead" ); //check that it's not empty
+
+		//make the cluster
+		//loop on the list until you find an entry that makes sense
+		for( int i=0; i < evnt.n; ++i ){
+			if( IS_LIST_INVALID( list[i] ) ){ continue; }
+			else{
+				kl.centroid_id = list[i].i;
+				kl.c_altitude = cb.at( kl.centroid_id ).altitude;
+				kl.c_azimuth = cb.at( kl.centroid_id ).azimuth;
+				break;
+			}
+		}
+		//check that something has been found
+		if( kl.centroid_id == 0 ) throw error( "Empty event!", "make_one_cluster_bead" );
+		
+		//refine the beading order according to the LUT
+		order = beading_order( list[0].e );
+		
+		unsigned int n_neigh;
+		oed current_k = {0, 1, 1};
+		unsigned int *neighbours = neigh( cb.at( kl.centroid_id ), 1, n_neigh );
+		while( kl.n <= order && current_k.i && current_k.e ){
+			current_k.i = 0;
+			current_k.e = 0;
+			current_k.t = 0;
+			for( int i=0; i < lile; ++i ){
+				//NOTE: the first crystal added will always be the centroid
+				//      typically at list[0].
+				if( std::count( neighbours, neighbours+n_neigh, list[i].i ) &&
+				    list[i].i != current_k.i && list[i].e > current_k.e ){
+					current_k.t = list[i].t;
+					current_k.i = list[i].i;
+					current_k.e = list[i].e;
+				}
+			}
+			
+			//if no crystal was found, get out of the while loop
+			free( neighbours ); neighbours = NULL;
+			if( current_k.i && current_k.e ){
+				kl.crys.push_back( current_k.i );
+				kl.crys_e.push_back( current_k.e );
+				kl.n++;
+				neighbours = neigh( cb.at( current_k.i ), 1, n_neigh );
+				listend = std::remove( list, list+lile, current_k );
+				lile = listend-list;
+			}
+		}
+
+		//calculate the energy sum
+		for( int i=0; i < kl.crys_e.size(); ++i ) kl.sum_e += kl.crys_e[i];
+		
+		free( list );
+		return kl;
+	}
+	
+	//------------------------------------------------------------------------
+	//do the beading order
+	//NOTE: very preliminary this thingie here
+	//      Also, I'm considering having another function
+	//      for a self limiting bead cluster...
+	unsigned int beading_order( float e ){
+		unsigned o = (unsigned int)round( LUT_INTERCEPT + LUT_FACTOR*pow( e, 1/3 ) );
+		return (o<1)?1:o;
+	}
+	
+	//------------------------------------------------------------------------
 	//the function that does clustering on a near-neighbours base.
 	//it basically runs make_one_cluster_NN() until the event is empty.
-	clusterZ make_clusters_NN( const data &evnt, unsigned int order=1 ){
+	clusterZ make_clusters( const data &evnt, unsigned int order,
+	                        cluster (*k_alg)( const data&, unsigned int ) ){
 		data new_evnt, the_evnt( evnt );
 		clusterZ the_clusters; //alloc the clustes
 		cluster kl; //a cluster
@@ -161,13 +247,10 @@ namespace XB{
 		the_clusters.in_A_on_Z = the_evnt.in_A_on_Z;
 		while( the_evnt.n ){
 			try{
-				kl = make_one_cluster_NN( the_evnt, order );
+				kl = k_alg( the_evnt, order );
 				the_clusters.clusters.push_back( kl );
 				++the_clusters.n;
 			}catch( error e ){ return the_clusters; }
-			
-			//checkpoint on the created cluster
-			//if( the_evnt.n-kl.n > the_evnt.n ) break; //immediately, because we have underflow!
 			
 			//empty the event of the associated crystals
 			new_evnt = data( the_evnt.n-kl.n, evnt.evnt ); //redo the event
@@ -185,7 +268,7 @@ namespace XB{
 
 			int cc=0; //loop index for "new_evnt"
 			for( int c=0; c < the_evnt.n && cc < new_evnt.n; ++c ){
-				if( !std::binary_search( kl.crys.begin(), kl.crys.end(), the_evnt.i[c] ) ){
+				if( !std::count( kl.crys.begin(), kl.crys.end(), the_evnt.i[c] ) ){
 					new_evnt.i[cc] = the_evnt.i[c];
 					new_evnt.t[cc] = the_evnt.t[c];
 					new_evnt.pt[cc] = the_evnt.pt[c];
@@ -201,5 +284,4 @@ namespace XB{
 		
 		return the_clusters;
 	}
-		
 } //namespace
