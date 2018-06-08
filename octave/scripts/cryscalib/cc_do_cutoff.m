@@ -16,16 +16,18 @@
 %              -- ax_ub: the x axis upper bound
 %              -- crys_nb: the crystal number
 %              -- c_trg: the trigger level
+%              -- interactive: a flag to actually ask for user's opinion
 
 function cutoff = cc_do_cutoff( energy_spc )
 	global settings;
-
+	
 	%parse the evtl. options
 	if isempty( settings )
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
 		settings.crys_nb = 0;
 		settings.c_trg = 10;
+		settings.interactive = true;
 	elseif isstruct( settings )
 		if isfield( settings, 'ax_lb' ) settings.ax_lb = settings.ax_lb;
 		else settings.ax_lb = 0; end
@@ -35,18 +37,30 @@ function cutoff = cc_do_cutoff( energy_spc )
 		else settings.crys_nb = 0; end
 		if isfield( settings, 'c_trg' ) settings.c_trg = settings.c_trg;
 		else settings.c_trg = 10; end
+		if isfield( settings, 'interactive' ) settings.interactive = settings.interactive;
+		else settings.interactive = true; end
 	elseif isscalar( settings )
 		settings.ax_lb = 0;
 		settings.ax_ub = 3e3;
 		settings.crys_nb = settings;
 		settings.c_trg = 10;
+		settings.interactive = true;
 	end
 
+	if isempty( energy_spc )
+		warning( ['crystal ', num2str( settings.crys_nb ), ' is inactive.' );
+		cutoff = -1;
+		return;
+	end
+	
 	go_on = true;
 	fig = figure( 'position', [100, 100, 1600, 1200] );
 
 	%find the minimm value
 	cutoff = min( energy_spc(1, find( energy_spc(2,:) > settings.c_trg ) ) );
+	if isempty( cutoff )
+		cutoff = 0;
+	end
 	lin_hgt = max( energy_spc(2,:) );
 	while go_on
 		%display
@@ -67,8 +81,17 @@ function cutoff = cc_do_cutoff( energy_spc )
 		set( lg, 'fontsize', 24 );
 		
 		%ask for user's opinion
-		disp( "cc_do_cutoff: is this OK?" );
-		[go_on, settings, cutoff] = cc_do_cutoff_prompt( fig, settings, cutoff );
+		if settings.interactive
+			disp( "cc_do_cutoff: is this OK?" );
+			[go_on, settings, cutoff] = cc_do_cutoff_prompt( fig, settings, cutoff );
+		else
+			name = [ num2str( settings.crys_nb ), '_cutoff_', ...
+					num2str( settings.ax_lb ), '_to_', ...
+					num2str( settings.ax_ub ) ];
+			hgsave( fig, name );
+			pause( 3 );
+			go_on = false;
+		end
 	end
 	close( fig );
 end
@@ -107,7 +130,6 @@ function [go_on, settings, cutoff] = cc_do_cutoff_prompt( fig, old_settings, cut
 				name = opts{1};
 			else
 				name = [ num2str( settings.crys_nb ), '_cutoff_', ...
-				         num2str( settings.bin ), '_from_', ...
 				         num2str( settings.ax_lb ), '_to_', ...
 				         num2str( settings.ax_ub ) ];
 				hgsave( fig, name );
@@ -121,6 +143,13 @@ function [go_on, settings, cutoff] = cc_do_cutoff_prompt( fig, old_settings, cut
 				cutoff = str2num( opts{1} );
 			else
 				disp( 'command "mv" requires 1 or 2 arguments.' );
+			end
+		case 'goon'
+			if numel( opts ) > 0
+				disp( 'command "goon" does not take options.' );
+			else
+				settings.interactive = false;
+				go_on = false;
 			end
 		otherwise
 			disp( ['"', cmd, '" is not a valid command.'] );

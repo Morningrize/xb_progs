@@ -122,10 +122,9 @@ function cryscalib( varargin )
 			cc_do_eres( lore(cc).gfit_p, lore(cc).gfit_e, lore(cc).calf );
 		
 		%and print
-		f = cc_print( calfile, 'a', cc, lore(cc).cutoff, lore(cc).cal_p, ...
-		              lore(cc).cal_e, lore(cc).dE_E );
 		disp( 'cc: done' );
 	end
+	cc_print( calfile, 'a', lore );
 	fclose( f );
 	
 	%save the data from this execution.

@@ -1,42 +1,45 @@
 %this function prints the calibration data into a hooman readable file
 %
-% file = cc_print( file{_name}, writin_mode, c_pees, cp_err, dE_E )
-%
-% -- file{_name}: either a file pointer or a file name, the output's target
-% -- writing_mode: either "w", for overwrite, or "a", for append
-%                  (mute if the file is already opened).
-% -- crystal_number: the number of the crystal
-% -- cutoff: the crystal's cutoff.
-% -- c_pees: calibration parameters (come out of cc_do_calib)
-% -- cp_err: calibration parameters errorZ.
-% -- dE_E: the energy resolution (for each peak, the user will decide what to do)
+% file = cc_print( file{_name}, writin_mode, lore )
+% -- lore: it's the structure where the results are stored (and that's also saved)
+%          here an easier file is produced. Per crystal.
 %returns nothing.
 %outputs a file.
 
-function file = cc_print( file, writing_mode, crystal_number, cutoff, c_pees, cp_err, dE_E )
+function file = cc_print( file, writing_mode, lore )
 	if ischar( file )
 		file = fopen( file, writing_mode );
 	end
 	
-	fprintf( file, 'Crystal number %d\n', crystal_number );
-	
-	fprintf( file, 'Cutoff' );
-	fprintf( file, ' %f', cutoff );
-	fprintf( file, '\n' );
-
-	fprintf( file, 'Calibration' );
-	fprintf( file, ' %f', c_pees );
-	fprintf( file, '\n' );
-	
-	fprintf( file, 'Errors' );
-	fprintf( file, ' %f', cp_err );
-	fprintf( file, '\n' );
-	
-	fprintf( file, 'dE_E' )
-	fprintf( file, ' %f', dE_E );
-	fprintf( file, '\n' );
-	
-	fprintf( file, '\n######\n\n' );
+	for cc=1:162
+		fprintf( file, 'Crystal number %d\n', cc );
+		
+		if isfield( lore, 'cutoff' )
+			fprintf( file, 'Cutoff' );
+			fprintf( file, ' %f', lore(cc).cutoff );
+			fprintf( file, '\n' );
+		end
+		
+		if isfield( lore, 'cal_p' )
+			fprintf( file, 'Calibration' );
+			fprintf( file, ' %f', lore(cc).cal_p );
+			fprintf( file, '\n' );
+		end
+		
+		if isfield( lore, 'cal_e' )
+			fprintf( file, 'Errors' );
+			fprintf( file, ' %f', lore(cc).cal_e );
+			fprintf( file, '\n' );
+		end
+		
+		if isfield( lore, 'dE_E' )
+			fprintf( file, 'dE_E' )
+			fprintf( file, ' %f', lore(cc).dE_E );
+			fprintf( file, '\n' );
+		end
+		
+		fprintf( file, '\n@@@\n\n' );
+	end
 
 	fflush( file );
 end
