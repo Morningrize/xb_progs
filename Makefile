@@ -166,6 +166,9 @@ xb_trigger_siv : libxb_core
 xb_match : libxb_core
 	$(CXX) -lxb_core $(SRC)/xb_match.cpp $(CXXFLAGS) $(LDFLAGS) -o xb_match
 
+xb_apply_cutoff : libxb_core
+	$(CXX) -lxb_core $(SRC)/xb_apply_cutoff.cpp $(CXXFLAGS) $(LDFLAGS) -o xb_apply_cutoff
+
 #----------------------------------------------------------------------
 #test programs
 xb_check_nn: xb_ball xb_error
