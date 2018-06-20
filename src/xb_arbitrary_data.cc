@@ -315,6 +315,14 @@ namespace XB{
 	//implementation of the adata_uniarr class
 	
 	//----------------------------------------------------------------------------
+	//constructors:
+	
+	adata_uniarr::adata_uniarr( const unsigned nb, const adata_indexer &idx ):
+		_indexer( idx ),
+		_ua( adata( &idx ) )
+	{}
+
+	//----------------------------------------------------------------------------
 	//set the indexer to an existing uniform array
 	//note that this will destroy the content if it's different from the
 	//previous one

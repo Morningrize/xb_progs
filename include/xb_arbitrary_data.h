@@ -30,7 +30,7 @@
 1)   adapt for pointed indexer                     [x]
 1.5) implement convenience into indexer            [x]
 2)   implement un- and subscribe methods of adata  [x]
-3)   implement adata_uniarr                        [x]
+3)   implement adata_uniarr                        [/]
 4)   implement the merge function                  [x]
 */
 
@@ -174,12 +174,9 @@ namespace XB{
             friend class adata;
             
 			_xb_arbitrary_data_uniform_array() {};
-			_xb_arbitrary_data_uniform_array( const unsigned &nb_elements ):
-                std::vector< adata_field >( nb_elements ) {};
-			_xb_arbitrary_data_uniform_array( const unsigned &nb_elements,
-			                                  const adata_indexer &indexer ):
-                std::vector< adata_field >( nb_elements ),
+			_xb_arbitrary_data_uniform_array( const adata_indexer &indexer ):
                 adata_indexer( indexer  ) {};
+			_xb_arbitrary_data_uniform_array( const unsigned nb, const adata_indexer &idx );
 			_xb_arbitrary_data_uniform_array &operator=( const _xb_arbitrary_data_uniform_array& );
 			_xb_arbitrary_data_uniform_array &operator+( _xb_arbitrary_data_uniform_array &right );
 			
