@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>
+#include <limits.h>
 #include <algorithm>
 #include <vector>
 
@@ -84,6 +85,7 @@ int main( int argc, char **argv ){
 	}
 	
 	float cry_thr[162];
+	for( int i=0; i < 162; ++i ) cry_thr[i] = INT_MAX;
 	if( !strcmp( thr_name, "/dev/null" ) ){
 		puts( "No threshold file: nothing to do." );
 		exit( 0 );
@@ -112,8 +114,8 @@ int main( int argc, char **argv ){
 
 //------------------------------------------------------------------------------------
 int get_thresholds( char *thr_name, float *cry_thr ){
-	char *pcommand = (char*)calloc( strlen( thr_name ) + 64, 1 );
-	strcpy( pcommand, "awk '$1 == \"Crystal\" { print $3 }; $1 == \"Cutoff\" { print $2 }' " );
+	char *pcommand = (char*)calloc( strlen( thr_name ) + 128, 1 );
+	strcpy( pcommand, "awk '$1 == \"Crystal\" { print $3 }; $1 == \"Cutoff\" { if( $2 ) print $2; else print 2147483647 }' " );
 	strcat( pcommand, thr_name );
 	FILE *thr_pipe = popen( pcommand, "r" );
 	
@@ -121,8 +123,8 @@ int get_thresholds( char *thr_name, float *cry_thr ){
 	while( !feof( thr_pipe ) ){
 		fscanf( thr_pipe, "%d", &c );
 		fscanf( thr_pipe, "%f", &t );
-		printf( "c %d t %f\n", c, t );
 		++count;
+		cry_thr[c-1] = t;
 	}
 	
 	pclose( thr_pipe );
@@ -133,7 +135,7 @@ int get_thresholds( char *thr_name, float *cry_thr ){
 void apply_thr( std::vector<XB::data> &data, float *cry_thr ){
 	for( int i=0; i < data.size(); ++i )
 		for( int h=0; h < data[i].n; ++h )
-			if( data[i].e[h] < cry_thr[data[i].i[h]] ) data[i].e[h] = 0;
+			if( data[i].e[h] < cry_thr[data[i].i[h]-1] ) data[i].e[h] = 0;
 }
 
 //hideous nidiication of for loops
@@ -141,7 +143,7 @@ void apply_thr( std::vector<XB::clusterZ> &klz, float *cry_thr ){
 	for( int k=0; k < klz.size(); ++k )
 		for( int sk=0; sk < klz[k].clusters.size(); ++sk ){
 			for( int c=0; c < klz[k].clusters[sk].crys.size(); ++c )
-				if( klz[k].clusters[sk].crys_e[c] > cry_thr[klz[k].clusters[sk].crys[c]] )
+				if( klz[k].clusters[sk].crys_e[c] > cry_thr[klz[k].clusters[sk].crys[c]-1] )
 					klz[k].clusters[sk].crys_e[c] = 0;
 			klz[k].clusters[sk].sum_e = 0;
 			for( int c=0; c < klz[k].clusters[sk].crys.size(); ++c )
