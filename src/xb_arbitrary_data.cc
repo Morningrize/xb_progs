@@ -321,6 +321,14 @@ namespace XB{
 		_indexer( idx ),
 		_ua( adata( &idx ) )
 	{}
+	
+	adata_uniarr::adata_uniarr( const adata_uniarr &given ):
+		_indexer( given._indexer ),
+		_ua( given._ua ) //this will copy everything but the pointer to the indexer will be wrong
+	{
+		//set them right without resetting the data structs.
+		for( int i=0; i < _ua.size(); ++i ) _ua[i]._fields = &_indexer;
+	}
 
 	//----------------------------------------------------------------------------
 	//set the indexer to an existing uniform array
@@ -402,7 +410,7 @@ namespace XB{
 	adata_uniarr &adata_uniarr::operator+( const adata_uniarr &right ){
 		if( right.empty() || _ua.empty() ) return *this;
 		if( right.size() != _ua.size() )
-			throw( error e( "Mismatching lengths!", "XB::adata_uniarr" );
+			throw( error e( "Mismatching lengths!", "XB::adata_uniarr" ) );
 		
 		
 		adata_indexer iright = *right._indexer;
@@ -427,7 +435,13 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//assignment
 	adata_uniarr &adata_uniarr::operator=( const adata_uniarr &right ){
+		_indexer = right._indexer;
+		_ua = given._ua; //same as the copy ctor, contents will be correct but pointers wrong
+		//and set them
+		for( int i=0; i < _ua.size(); ++i ) _ua[i]._fields = &_indexer;
 		
+		return *this;
+	}
 	
 	//============================================================================
 	//the three friend functions.
@@ -533,5 +547,5 @@ namespace XB{
 		
 		return merged;
 	}
-		
+	
 } //end of namespace

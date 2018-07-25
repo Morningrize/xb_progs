@@ -30,7 +30,7 @@
 1)   adapt for pointed indexer                     [x]
 1.5) implement convenience into indexer            [x]
 2)   implement un- and subscribe methods of adata  [x]
-3)   implement adata_uniarr                        [/]
+3)   implement adata_uniarr                        [x]
 4)   implement the merge function                  [x]
 */
 
@@ -177,6 +177,7 @@ namespace XB{
 			_xb_arbitrary_data_uniform_array( const adata_indexer &indexer ):
                 adata_indexer( indexer  ) {};
 			_xb_arbitrary_data_uniform_array( const unsigned nb, const adata_indexer &idx );
+			_xb_arbitrary_data_uniform_array( const _xb_arbitrary_data_uniform_array &given );
 			_xb_arbitrary_data_uniform_array &operator=( const _xb_arbitrary_data_uniform_array& );
 			_xb_arbitrary_data_uniform_array &operator+( _xb_arbitrary_data_uniform_array &right );
 			
@@ -222,6 +223,6 @@ namespace XB{
                         adata_indexer *indexer = NULL );
 	_xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
 	                                const _xb_arbitrary_data &two );
-		
+
 }
 #endif
