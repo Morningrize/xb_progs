@@ -9,7 +9,7 @@ namespace XB{
 
 	//----------------------------------------------------------------------------
 	//comparison. See the NOTE on field ordering in the header!
-	bool adata_indexer::operator!=( adata_indexer &right ){
+	bool adata_indexer::operator!=( const adata_indexer &right ){
 		if( names.size() != right.names.size() ) return true;
 		if( memcmp( diffs, right.diffs, XB_ADATA_NB_FIELDS*sizeof( unsigned short ) ) )
 			return true;
@@ -20,7 +20,7 @@ namespace XB{
 
 	//----------------------------------------------------------------------------
 	//concatenation. Remember that order matters!
-	adata_indexer &adata_indexer::operator+( adata_indexer &right ){
+	adata_indexer &adata_indexer::operator+( const adata_indexer &right ){
 		//first merge the diff tables. If there are conflicts, then throw
 		short unsigned candidate = 0;
 		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
@@ -29,7 +29,7 @@ namespace XB{
 				throw( error( "Colliding fields or integer overflow!", "XB::adata_indexer" ) );
 			diffs[i] = candidate;
 		}
-		names = names + right.names;
+		names.insert( names.end(), right.names.begin(), right.names.end() );
 		
 		return *this;
 	}
@@ -52,7 +52,7 @@ namespace XB{
 		in_Z = 0;
 		in_A_on_Z = 0;
 		
-		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fields->diffs[i] = 0;
+		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fields->diffs[i] = -1;
 	}
 	
 	adata::_xb_arbitrary_data( const adata_field *fld_array, size_t n_fld ):
@@ -67,7 +67,7 @@ namespace XB{
 		in_Z = 0;
 		in_A_on_Z = 0;
 		
-		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fields->diffs[i] = 0;
+		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fields->diffs[i] = -1;
 		for( int i=0; i < n_fld; ++i ) dofield( fld_array[i], NULL );
 	}
 	
@@ -94,8 +94,21 @@ namespace XB{
 		memcpy( _buf, given._buf, given._buf_sz );
 	}
 	
-	//TODO: there's a contructor missing.
+	adata::_xb_arbitrary_data( adata_indexer *idx ):
+		_buf( NULL ),
+		_buf_sz( 0 ),
+		_fields( idx ),
+		_is_fields_owned( 0 )
+	{
+		n = 0;
+		evnt = 0;
+		tpat = 0;
+		in_Z = 0;
+		in_A_on_Z = 0;
 	
+		for( int i=0; i < _fields->size(); ++i ) dofield( _fields->names[i], NULL );
+	}
+		
 	//dtor:
 	adata::~_xb_arbitrary_data(){
 		if( _buf ) free( _buf );
@@ -106,7 +119,7 @@ namespace XB{
 	//utils:
 	//----------------------------------------------------------------------------
 	//now the fun begins: the hash function
-	unsigned char adata::phash8( const char *name ) const {
+	unsigned char adata::phash8( const char *name ) {
 		int len = strlen( name );
 		unsigned short h = 0;
 		
@@ -195,7 +208,7 @@ namespace XB{
 		unsigned char i_fld = phash8( fld.name );
 		void *head = (char*)_buf + _fields->diffs[i_fld];
 		
-		if( _fields->diffs[i_fld] || _fields->diffs[i_fld] >= _buf_sz ){
+		if( _fields->diffs[i_fld] < 0 || _fields->diffs[i_fld] >= _buf_sz ){
 			_buf = realloc( _buf, _buf_sz+fld.size );
 			
 			//save the new field poiner
@@ -222,7 +235,7 @@ namespace XB{
 			memcpy( head, buf, fld.size ); //copy
 		}
 	}
-	
+
 	void adata::dofield( const char *name, short size, void *buf ){
 		adata_field fld = { "", size };
 		strncpy( fld.name, name, 16 );
@@ -241,22 +254,22 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//remove a field (another interesting method)
 	void adata::rmfield( const char *name ){
-		i_fld = _fields->diffs[phash8( name )];
+		int i_fld = phash8( name );
 		if( _fields->diffs[i_fld] < 0 || _fields->diffs[i_fld] >= _buf_sz ) return;
 		
 		//work out where head is in the buffer
+		void *head = (char*)_buf + _fields->diffs[i_fld];
 		int fsize = *(int*)head + sizeof(int);
-		int from_front = (char*)head - (char*)_buf; //how far from the front
-		int to_back = _buf_sz - fsize - from_front; //how far from the back
+		int to_back = _buf_sz - fsize - _fields->diffs[i_fld]; //how far from the back
 		
 		//find the beginning from the head
 		void *rest = (char*)head + fsize;
 		memmove( head, rest, to_back );
 		
 		//move the field pointers
-		_fields->diffs[phash8( name )] = 0; //remove the one
+		_fields->diffs[phash8( name )] = -1; //remove the one
 		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
-			if( !_fields->diffs[i] || _fields->diffs[i] < rest ) continue;
+			if( (char*)_buf + _fields->diffs[i] < (char*)rest ) continue;
 			
 			//move them back by fsize (the removed bit)
 			_fields->diffs[i] = _fields->diffs[i] - fsize;
@@ -269,7 +282,7 @@ namespace XB{
 		//drum out the field from the field list
 		//only if you own the thing
 		if( _is_fields_owned ){
-			from_front = 0; //recycle
+			int from_front = 0;
 			while( strcmp( (_fields->names.begin()+from_front)->name, name ) ) ++from_front;
 			_fields->names.erase( _fields->names.begin() + from_front );
 		}
@@ -287,7 +300,7 @@ namespace XB{
 		_buf_sz = 0;
 		//fat fingered safety measure...
 		if( _is_fields_owned ){
-			for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fields->diffs[i] = 0;
+			for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fields->diffs[i] = -1;
 			_fields->names.clear();
 		}
 	}
@@ -296,11 +309,11 @@ namespace XB{
 	//un- and subscribe methods
 	void adata::subscribe_uniarr( adata_uniarr *ua ){
 		if( !_fields ){
-			_fields = ua->_indexer;
+			_fields = &ua->_indexer;
 			_is_fields_owned = 0;
 		} else if( _fields && *_fields == ua->_indexer ){
 			if( _is_fields_owned ) delete _fields;
-			_fields = _indexer;
+			_fields = &ua->_indexer;
 			_is_fields_owned = 0;
 		} else throw( error( "Not uniform to uniform array!", "XB::adata" ) );
 	}
@@ -317,12 +330,15 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//constructors:
 	
-	adata_uniarr::adata_uniarr( const unsigned nb, const adata_indexer &idx ):
+	adata_uniarr::_xb_arbitrary_data_uniform_array( const unsigned nb, const adata_indexer &idx ):
 		_indexer( idx ),
-		_ua( adata( &idx ) )
-	{}
+		_ua( nb )
+	{
+		adata tmp( &_indexer );
+		for( int i=0; i < nb; ++i ) _ua[i] = tmp;
+	}
 	
-	adata_uniarr::adata_uniarr( const adata_uniarr &given ):
+	adata_uniarr::_xb_arbitrary_data_uniform_array( const adata_uniarr &given ):
 		_indexer( given._indexer ),
 		_ua( given._ua ) //this will copy everything but the pointer to the indexer will be wrong
 	{
@@ -335,15 +351,15 @@ namespace XB{
 	//note that this will destroy the content if it's different from the
 	//previous one
 	void adata_uniarr::set_indexer( const adata_indexer &given ){
-		if( _indexer != indexer ) clear();
-		_indexer = indexer;
+		if( _indexer != given ) clear();
+		_indexer = given;
     }
 	
 	//----------------------------------------------------------------------------
 	//push a field onto the whole array
 	void adata_uniarr::push_indexer( adata_field &given ){
 		//indexer shared --> control to this class!
-		if( _indexer.diffs[phash8( given.name ) < 0 ) _indexer.names.push_back( given );
+		if( _indexer.diffs[adata::phash8( given.name )] < 0 ) _indexer.names.push_back( given );
 		
 		//do we touch all the events, so that we don't need to discover at the moment's
 		//notice that we need to allocate memory? Yeeah
@@ -354,11 +370,10 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//remove a field from all entries
 	adata_field adata_uniarr::pop_indexer(){
-		if( _indexer.diffs[phash8( given.name ) < 0 ) return { "", 0 }; //empty field
 		adata_field fld = _indexer.names.back();
-		for( int i=0; i < size(); ++i ) this->at(i).rmfield( fld );
+		for( int i=0; i < size(); ++i ) this->at(i).rmfield( fld.name );
 		_indexer.names.pop_back();
-		_indexer.diffs[phash8( fld.name )] = -1;
+		_indexer.diffs[adata::phash8( fld.name )] = -1;
 		return fld;
 	}
 	
@@ -374,7 +389,7 @@ namespace XB{
     adata adata_uniarr::pop_back(){
 		adata ad = this->back();
 		this->pop_back();
-		ad->unsubscribe_uniarr();
+		ad.unsubscribe_uniarr();
 		return ad;
 	}
 	
@@ -386,7 +401,7 @@ namespace XB{
 	
 	//----------------------------------------------------------------------------
 	_ua_iter adata_uniarr::insert( _ua_iter pos, _ua_iter first, _ua_iter last ){
-		for( _ua_iter i=firt; i != last; ++i ) i->subscribe_uniarr( this );
+		for( _ua_iter i=first; i != last; ++i ) i->subscribe_uniarr( this );
 		return _ua.insert( pos, first, last );
 	};
 	
@@ -410,20 +425,19 @@ namespace XB{
 	adata_uniarr &adata_uniarr::operator+( const adata_uniarr &right ){
 		if( right.empty() || _ua.empty() ) return *this;
 		if( right.size() != _ua.size() )
-			throw( error e( "Mismatching lengths!", "XB::adata_uniarr" ) );
+			throw( error( "Mismatching lengths!", "XB::adata_uniarr" ) );
 		
 		
-		adata_indexer iright = *right._indexer;
+		adata_indexer iright = right._indexer;
 		for( int i=0; i < iright.size(); ++i )
-			if( iright.diffs[i] >= 0 ) iright.diffs[i] += right._buf_sz;
+			if( iright.diffs[i] >= 0 ) iright.diffs[i] += right._ua[0]._buf_sz;
 		_indexer = _indexer + iright;
 		
-		_ua.resize( ( _ua.size() >= right.size() )? _ua.size() : right.size() );
 		unsigned new_buf_sz = _ua[0]._buf_sz + right._ua[0]._buf_sz;
 		unsigned right_buf_sz = right._ua[0]._buf_sz;
 		
 		for( int i=0; i < _ua.size(); ++i ){
-			if( !memcmp( &_ua[i].n, &right[i].n, sizeof( event_holder ) ) )
+			if( !memcmp( &_ua[i].n, &right._ua[i].n, sizeof( event_holder ) ) )
 				throw( error( "Structures relate to different events!", "XB::adata_uniarr" ) );
 			_ua[i]._buf = realloc( _ua[i]._buf, new_buf_sz );
 			memcpy( (char*)_ua[i]._buf + _ua[i]._buf_sz, right[i]._buf, right_buf_sz );
@@ -436,7 +450,7 @@ namespace XB{
 	//assignment
 	adata_uniarr &adata_uniarr::operator=( const adata_uniarr &right ){
 		_indexer = right._indexer;
-		_ua = given._ua; //same as the copy ctor, contents will be correct but pointers wrong
+		_ua = right._ua; //same as the copy ctor, contents will be correct but pointers wrong
 		//and set them
 		for( int i=0; i < _ua.size(); ++i ) _ua[i]._fields = &_indexer;
 		
@@ -468,7 +482,7 @@ namespace XB{
 		head = (event_holder*)head + 1;
 		*(int*)head = nf; //# fields
 		head = (int*)head + 1;
-		memcpy( head, &given._fields->names[0]), nf*sizeof(adata_field) ); //field list
+		memcpy( head, &given._fields->names[0], nf*sizeof(adata_field) ); //field list
 		head = (adata_field*)head + nf;
 		memcpy( head, deltas, nf*sizeof(int) ); //deltas
 		head = (int*)head + nf;
@@ -519,7 +533,7 @@ namespace XB{
 		//reconstruct the pointer offset map
 		hdr = (adata_field*)hdr + nf;
 		for( int i=0; i < fields.size(); ++i ){
-			given._fields->diffs[given.phash8( fields[i].name )] = *((int*)hdr+i);
+			given._fields->diffs[adata::phash8( fields.names[i].name )] = *((int*)hdr+i);
 		}
 		
 		return nf; //useless...
@@ -534,18 +548,18 @@ namespace XB{
 		
 		//make the new indexer
 		adata merged( one );
-		merged._fields = new adata_indexer( one._fields );
+		merged._fields = new adata_indexer( *one._fields );
 		merged._is_fields_owned = 1;
 		adata_indexer itwo = *two._fields;
 		
 		for( int i=0; i < itwo.names.size(); ++i )
 			if( itwo.diffs[i] >= 0 ) itwo.diffs[i] += one._buf_sz;
 		
-		*merged.fields = *merged._fields + itwo; //NOTE: this will throw if not compatible
+		*merged._fields = *merged._fields + itwo; //NOTE: this will throw if not compatible
 		merged._buf = realloc( merged._buf, merged._buf_sz + two._buf_sz );
 		memcpy( (char*)merged._buf + merged._buf_sz, two._buf, two._buf_sz );
 		
 		return merged;
 	}
-	
+
 } //end of namespace

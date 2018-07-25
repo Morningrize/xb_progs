@@ -51,15 +51,15 @@ namespace XB{
 	} adata_field;
     
     //a data structure to do indexing (also the offset table can be shared!)
-    //NOTE: now and offset of -1 means empty!
+    //NOTE: now an offset of -1 means empty!
     typedef class _xb_arb_data_indexer {
         public:
             _xb_arb_data_indexer(): names( 0 ) {
-                for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) diff[i] = -1; };
+                for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) diffs[i] = -1; };
             _xb_arb_data_indexer( const unsigned n ): names( n ) {
-                for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) diff[i] = -1; };
+                for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) diffs[i] = -1; };
             _xb_arb_data_indexer( const _xb_arb_data_indexer &given ): names( given.names ) {
-                memcpy( diffs, right.diffs, XB_ADATA_NB_FIELDS ); };
+                memcpy( diffs, given.diffs, XB_ADATA_NB_FIELDS ); };
             _xb_arb_data_indexer &operator=( const _xb_arb_data_indexer &right ){
                 names = right.names;
                 memcpy( diffs, right.diffs, XB_ADATA_NB_FIELDS );
@@ -68,15 +68,15 @@ namespace XB{
             //NOTE on comparison: to KISS, a difference in the ordering of the
             //     fields is flagged as a difference in the indexers
             //     this also means that the concatenation order _matters_
-            bool operator!=( _xb_arb_data_indexer &right );
-            bool operator==( _xb_arb_data_indexer &right ){ return !( *this != right ); };
-            _xb_arb_data_indexer operator+( _xb_arb_data_indexer &right );
+            bool operator!=( const _xb_arb_data_indexer &right );
+            bool operator==( const _xb_arb_data_indexer &right ){ return !( *this != right ); };
+            _xb_arb_data_indexer &operator+( const _xb_arb_data_indexer &right );
             
             unsigned size() { return names.size(); };
             std::vector< adata_field > names;
             int diffs[XB_ADATA_NB_FIELDS];
     } adata_indexer;
-    
+
 	//----------------------------------------------------------------------------
 	//the main thing, the class
 	typedef class _xb_arbitrary_data : public event_holder {
@@ -112,8 +112,8 @@ namespace XB{
 			template< class T >
 			T tip( const char *name ) const {
                 unsigned char i_fld = phash8( name );
-				void *head = (*char)_buf + _fields.diffs[i_fld];
-                if( head < _buf || _fields.diffs[i_fld] >= _buf_sz )
+				void *head = (char*)_buf + _fields->diffs[i_fld];
+                if( head < _buf || _fields->diffs[i_fld] >= _buf_sz )
                     return NULL;
 				head = (int*)head + 1;
 				return *(T*)head;
@@ -133,15 +133,16 @@ namespace XB{
 			}
 			
 			//Indexer accessing and operations
-			std::vector< adata_field > lsfields() const { return _fields->names(); };
-            std::vector< adata_field > *get_indexer() { return _fields; };
+			std::vector< adata_field > lsfields() const { return _fields->names; };
+			adata_indexer *get_indexer() { return _fields; };
 			int nf() const { return _fields->names.size(); }; //count them
 			int fsize( const char *name ) const; //get the size of one
 			
 			//a couple of friends, for I/O ops
 			friend int adata_getlbuf( void **linbuf, const _xb_arbitrary_data &given );
-			friend int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf );
-			//TODO: and one for merge
+			friend int adata_fromlbuf( _xb_arbitrary_data &here,
+			                           const void *buf,
+			                           adata_indexer *indexer );
 			friend _xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
 			                                       const _xb_arbitrary_data &two );
 		private:
@@ -157,13 +158,13 @@ namespace XB{
 			
 			//an utility to has a field name
 			//pearson's has, 8 bits.
-			unsigned char phash8( const char *name ) const;
+			static unsigned char phash8( const char *name );
 			
 			//un- and subscription to an uniform array
 			void subscribe_uniarr( _xb_arbitrary_data_uniform_array *ua );
 			void unsubscribe_uniarr();
 	} adata;
-    
+
 	//----------------------------------------------------------------------------
     //an array of UNIFORM adata entries --this should be the way to use this
     //struct since the indexer has been rendered external
@@ -171,15 +172,15 @@ namespace XB{
 	typedef _ua_type::iterator _ua_iter;
     typedef class _xb_arbitrary_data_uniform_array {
 		public:
-            friend class adata;
+            friend class _xb_arbitrary_data;
             
 			_xb_arbitrary_data_uniform_array() {};
 			_xb_arbitrary_data_uniform_array( const adata_indexer &indexer ):
-                adata_indexer( indexer  ) {};
+                _indexer( indexer ) {};
 			_xb_arbitrary_data_uniform_array( const unsigned nb, const adata_indexer &idx );
 			_xb_arbitrary_data_uniform_array( const _xb_arbitrary_data_uniform_array &given );
 			_xb_arbitrary_data_uniform_array &operator=( const _xb_arbitrary_data_uniform_array& );
-			_xb_arbitrary_data_uniform_array &operator+( _xb_arbitrary_data_uniform_array &right );
+			_xb_arbitrary_data_uniform_array &operator+( const _xb_arbitrary_data_uniform_array &right );
 			
 			//NOTE: invoking set_indexer will reset ALL members!
 			void set_indexer( const adata_indexer &given );
@@ -199,13 +200,16 @@ namespace XB{
 			
 			//some forwarding of the underlying vector
 			adata &operator[]( unsigned i ){ return _ua[i]; };
+			adata operator[]( unsigned i  ) const { return _ua[i]; };
 			adata &at( unsigned i ){ return _ua.at(i); };
-			unsigned size(){ return _ua.size(); };
+			adata at( unsigned i ) const { return _ua.at(i); };
+			unsigned size() const { return _ua.size(); };
 			_ua_iter begin() { return _ua.begin(); };
 			_ua_iter end() { return _ua.end(); };
 			adata &front(){ return _ua.front(); };
 			adata &back(){ return _ua.back(); };
-			bool empty(){ return _ua.empty(); };
+			bool empty() const { return _ua.empty(); };
+			void clear(){ _ua.clear(); _indexer = adata_indexer(); };
 			void resize( unsigned n ){ _ua.resize( n ); };
 		private:
 			adata_indexer _indexer;
