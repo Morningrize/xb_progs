@@ -16,6 +16,8 @@
 #define XB_ADATA_NB_FIELDS 256 //maximum number of fields supported
                                //NOTE: keep it small, but that means
                                //      hash collisions will be a problem
+#define XB_ADATA_FIELD_NAME_LENGTH 16
+
 //the hash table
 //NOTE: apparently, there's a way to generate one that won't produce collisions
 //      on a given set of words. This is NOT it yet, it's just a random one.
@@ -46,7 +48,7 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//a data structure representing the field,
 	typedef struct _xb_arb_data_field {
-		char name[16];
+		char name[XB_ADATA_FIELD_NAME_LENGTH];
 		short size;
 	} adata_field;
     
@@ -73,6 +75,8 @@ namespace XB{
             _xb_arb_data_indexer &operator+( const _xb_arb_data_indexer &right );
             
             unsigned size() { return names.size(); };
+            adata_field &operator[]( unsigned i ){ return names[i]; };
+            adata_field &at( unsigned i ){ return names.at(i); };
             std::vector< adata_field > names;
             int diffs[XB_ADATA_NB_FIELDS];
     } adata_indexer;

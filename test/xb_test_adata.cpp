@@ -1,22 +1,20 @@
-//little test program for the adata structure.
+//the new, expanded version of the test program for the adata structure.
 
 #include <stdio.h>
-#include <unistd.h>
-#include <vector>
+#include <getopt.h>
 
 #include "xb_arbitrary_data.h"
 #include "xb_io.h"
-#include "xb_reader.h"
 
-void tester( std::vector<XB::adata> &str, int ns, int fcount );
-char fields[256][64];
+char fields[256][16];
+XB::adata_indexer test_indexer( int fcount );
 
 int main( int argc, char **argv ){
-
-	int fcount = 0;
+    int fcount = 0;
+    
 	for( int i=1; i < argc; ++i ){
 		if( argv[i][0] == '-' ) break;
-		strncpy( fields[fcount], argv[i], 64 );
+		strncpy( fields[fcount], argv[i], 16 );
 		++fcount;
 	}
 	
@@ -34,146 +32,45 @@ int main( int argc, char **argv ){
 	}
 	
 	puts( "*** Weclome in XB::adata test program ***" );
-	
-	//should try the standard constructor
-	std::vector<XB::adata> str( ns ), vec;
-	puts( "A vector of adata's allocated." );
-	
-	tester( str, ns, fcount );
-	
-	XB::write( "astr3.axb", str );
-	puts( "Written a file" );
-	XB::load( "astr3.axb", vec );
-	puts( "Read the file" );
-	
-	if( str.size() != vec.size() ){ puts( "Wrong answer!" ); exit( 3 ); }
-
-	for( int i=0; i < str.size(); ++i  ) if( str[i] != vec[i] ) puts( "Broken copy!" );
-	
-	vec.clear();
-	XB::adata_field farr[] = {
-		{ "Xbn", 4 },
-		{ "Xbpt", 4 },
-		{ "Xbi", 4 },
-		{ "", 0 }
-	};
-	
-	XB::arb_reader( vec, "try.root", farr );
-	printf( "Read BURP file, %d entries\n", vec.size() );
-	XB::write( "try.axb", vec );
-	
-	std::vector<XB::adata_field> fld;
-	for( int i=0; i < 10 && i < vec.size(); ++i ){
-		fld = vec[i].lsfields();
-		printf( "\t%s\n", fld[0].name );
-		printf( "\t%s\n", fld[1].name );
-	}
-	
-	return 0;
+    
+    //test the indexer.
+    puts( ">>>PHASE 1: testing the indexer" );
+    XB::adata_indexer idx = test_indexer( fcount );
+    
+    //TBC
+    return 0;
 }
 
-void tester( std::vector<XB::adata> &str, int ns, int fcount ){
-	XB::adata_field *farr = (XB::adata_field*)malloc( fcount*sizeof(XB::adata_field) );
-	for( int f=0; f < fcount; ++f ){
-		strncpy( farr[f].name, fields[f], 16 );
-		farr[f].size = 4*sizeof(float);
-	}
-	puts( "Created a field list." );
-	
-	//try the parametric constructo
-	XB::adata astr( farr, fcount );
-	puts( "Created a structure from a field list." );
-	
-	//try lsfields
-	std::vector<XB::adata_field> flist = astr.lsfields(); //list the fields
-	puts( "Listed the fields:" );
-	float data[] = {1.5, 2.5, 3.5, 4.5};
-	for( int i=0; i < fcount; ++i ){
-		float tmp[] = {1.5+i, 2.5+i, 3.5+i, 4.5+i};
-		astr.dofield( fields[i], 4*sizeof(float), tmp ); //dofield in copy
-		printf( "\tCopied field %s\n", fields[i] );
-	}
-	
-	for( int i=0; i < ns; ++i ) str[i] = astr; //assignmet op and copy ctor (the same)
-	puts( "Copied the structures in the vector." );
-	
-	for( int i=0; i < ns; ++i ) if( str[i] != astr ) puts( "Broken copy!" );
-	puts( "Verified the copies in the vector." );
-	
-	str.clear();
-	puts( "Vector cleared." );
-	for( int i=0; i < ns; ++i ) str.push_back( astr ); //assignmet op and copy ctor (the same)
-	puts( "Copy-construted the structures in the vector." );
-	
-	//this actually works?
-	for( int i=0; i < ns-1; ++i ) if( str[i] != str[i+1] ) puts( "Broken copy!" );
-	puts( "Verified the copies in the vector." );
-	
-	astr.dofield( "-prak", 4*sizeof(float), NULL ); //dofield, just alloc
-	puts( "Allocated empty field." );
-	astr.dofield( "-prakkino", 4*sizeof(float), data ); //dofield alloc and copy
-	astr.dofield( "-prakkuccio", 2*sizeof(float), data );
-	astr.dofield( "-prakkello", 3*sizeof(float), data );
-	puts( "Allocated full fields." );
-	astr.rmfield( fields[0] );
-	astr.rmfield( "-prakkuccio" );
-	puts( "Removed fields." );
-	
-	float *redata;
-	std::vector<XB::adata_field> fld = astr.lsfields();
-	int nf = fld.size();
-	printf( "Fields listed, they are %d.\n", nf );
-	for( int f=0; f < nf; ++f ){
-		redata = (float*)astr( fld[f].name );
-		printf( "Copied data from '%s':", fld[f].name );
-		printf( "\t{ %f %f %f %f }\n", redata[0], redata[1], redata[2], redata[3] );
-		printf( "\tat = { %f %f %f %f }\n", astr.at<float>( fld[f].name, 0 ),
-		          astr.at<float>( fld[f].name, 1 ), astr.at<float>( fld[f].name, 2 ),
-		          astr.at<float>( fld[f].name, 3 ) );
-		printf( "\ttip = %f\n", astr.tip<float>( fld[f].name ) );
-	}
-	
-	free( redata ); //we'll play with it later again.
-	redata = NULL;
-	
-	XB::adata bstr( astr );
-	if( astr == bstr ) puts( "Copy-constructed structure:" );
-	else{ puts( "Copy construction failed" ); exit( 2 ); }
-	for( int f=0; f < nf; ++f ){
-		redata = (float*)bstr( fld[f].name );
-		printf( "Copied data from '%s':", fld[f].name );
-		printf( "\t{ %f %f %f %f }\n", redata[0], redata[1], redata[2], redata[3] );
-		printf( "\tat = { %f %f %f %f }\n", bstr.at<float>( fld[f].name, 0 ),
-		          bstr.at<float>( fld[f].name, 1 ), bstr.at<float>( fld[f].name, 2 ),
-		          bstr.at<float>( fld[f].name, 3 ) );
-		printf( "\ttip = %f\n", bstr.tip<float>( fld[f].name ) );
-	}
-	bstr.clear();
-	puts( "Cleared bstr." );
-	
-	void *linbuf;
-	int lb_size = XB::adata_getlbuf( &linbuf, astr );
-	printf( "Linearized a structure, it's %d long.\n", lb_size );
-	astr.clear();
-	puts( "Astr cleared." );
-	XB::adata_fromlbuf( bstr, linbuf );
-	puts( "Got a struct from a linear buffer:" );
-	for( int f=0; f < nf; ++f ){
-		redata = (float*)bstr( fld[f].name );
-		printf( "Copied data from '%s':", fld[f].name );
-		printf( "\t{ %f %f %f %f }\n", redata[0], redata[1], redata[2], redata[3] );
-		printf( "\tat = { %f %f %f %f }\n", bstr.at<float>( fld[f].name, 0 ),
-		          bstr.at<float>( fld[f].name, 1 ), bstr.at<float>( fld[f].name, 2 ),
-		          bstr.at<float>( fld[f].name, 3 ) );
-		printf( "\ttip = %f\n", bstr.tip<float>( fld[f].name ) );
-	}
-	free( farr );
-	free( redata );
-	puts( "Objects destroyed.\n" );
+//---------------------------------------------------------------------------------
+XB::adata_indexer test_indexer( int fcount ){
+    XB::adata_indexer idx( fcount );
+    printf( "\tConstructed an indexer of size %d\n", fcount );
+    for( int i=0; i < idx.names.size(); ++i ){
+        strncpy( idx[i].name, fields[i], XB_ADATA_FIELD_NAME_LENGTH );
+        idx[i].size = 4*sizeof( float );
+        idx.diffs[i] = 4*i*sizeof(float);
+    }
+    
+    XB::adata_indexer idx_again( idx );
+    puts( "\tCopy constructed an indexer:" );
+    
+    for( int i=0; i < fcount; ++i ){
+        printf( "\tfield %s:\n", fields[i] );
+        printf( "\t\tOriginal: %s:%d:%d; copied %s:%d:%d\n",
+                idx[i].name, idx[i].size, idx.diffs[i],
+                idx_again[i].name, idx_again[i].size, idx.diffs[i] );
+        idx[i].name[0] = 'Z';
+        idx.diffs[i] += 100;
+    }
+    
+    idx = idx + idx_again;
+    puts( "\tConcatenated indexes" );
+    
+    for( int i=0; i < idx.size(); ++i )
+        printf( "\tField: %s:%d:%d\n", idx[i].name, idx[i].size, idx.diffs[i] );
+    
+    //reset the structure for sane later usage
+    memset( idx_again.diffs, 0, XB_ADATA_NB_FIELDS );
+
+    return idx_again;
 }
-	
-	
-	
-	
-	
-	
