@@ -60,7 +60,7 @@ XB::adata_indexer test_indexer( int fcount ){
                 idx[i].name, idx[i].size, idx.diffs[i],
                 idx_again[i].name, idx_again[i].size, idx.diffs[i] );
         idx[i].name[0] = 'Z';
-        idx.diffs[i] += 100;
+        idx.diffs[i] = -1;
     }
     
     idx = idx + idx_again;
@@ -70,7 +70,7 @@ XB::adata_indexer test_indexer( int fcount ){
         printf( "\tField: %s:%d:%d\n", idx[i].name, idx[i].size, idx.diffs[i] );
     
     //reset the structure for sane later usage
-    memset( idx_again.diffs, 0, XB_ADATA_NB_FIELDS );
+    for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) idx_again.diffs[i] = -1;
 
     return idx_again;
 }

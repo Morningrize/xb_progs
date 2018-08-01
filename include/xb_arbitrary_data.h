@@ -61,10 +61,10 @@ namespace XB{
             _xb_arb_data_indexer( const unsigned n ): names( n ) {
                 for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) diffs[i] = -1; };
             _xb_arb_data_indexer( const _xb_arb_data_indexer &given ): names( given.names ) {
-                memcpy( diffs, given.diffs, XB_ADATA_NB_FIELDS ); };
+                memcpy( diffs, given.diffs, XB_ADATA_NB_FIELDS*sizeof(int) ); };
             _xb_arb_data_indexer &operator=( const _xb_arb_data_indexer &right ){
                 names = right.names;
-                memcpy( diffs, right.diffs, XB_ADATA_NB_FIELDS );
+                memcpy( diffs, right.diffs, XB_ADATA_NB_FIELDS*sizeof(int) );
                 return *this;
             };
             //NOTE on comparison: to KISS, a difference in the ordering of the
@@ -115,7 +115,7 @@ namespace XB{
 			//you can use this themplate mehtod, too
 			template< class T >
 			T tip( const char *name ) const {
-                unsigned char i_fld = phash8( name );
+                		unsigned char i_fld = phash8( name );
 				void *head = (char*)_buf + _fields->diffs[i_fld];
                 if( head < _buf || _fields->diffs[i_fld] >= _buf_sz )
                     return NULL;

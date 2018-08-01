@@ -204,6 +204,6 @@ xb_try_sim_reader: $(OBJECTS) $(GNUPLOT_OBJS) $(GNUPLOT_I) $(OBJ_W_ROOT)
 xb_cml: libxb_core libxb_viz
 	$(CXX) -lxb_viz -lxb_core $(TEST)/xb_cml.cpp $(CXXFLAGS) $(LDFLAGS) $(GNUPLOT_FLAGS) -o $(TEST)/xb_cml
 
-xb_test_adata : libxb_core libxb_root
-	$(CXX) -lxb_core -lxb_root $(TEST)/xb_test_adata.cpp $(CXXFLAGS) $(LDFLAGS) $(ROOT_FLAGS) -o $(TEST)/xb_test_adata
+xb_test_adata : libxb_core
+	$(CXX) -lxb_core $(TEST)/xb_test_adata.cpp $(CXXFLAGS) $(LDFLAGS) -o $(TEST)/xb_test_adata
 

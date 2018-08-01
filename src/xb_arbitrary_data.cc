@@ -1,6 +1,7 @@
 //implementation of xb_arbitrary_data.h
 
 #include "xb_arbitrary_data.h"
+#include <stdio.h>
 
 namespace XB{
 
@@ -11,7 +12,7 @@ namespace XB{
 	//comparison. See the NOTE on field ordering in the header!
 	bool adata_indexer::operator!=( const adata_indexer &right ){
 		if( names.size() != right.names.size() ) return true;
-		if( memcmp( diffs, right.diffs, XB_ADATA_NB_FIELDS*sizeof( unsigned short ) ) )
+		if( memcmp( diffs, right.diffs, XB_ADATA_NB_FIELDS*sizeof( int ) ) )
 			return true;
 		for( int i=0; i < names.size(); ++i )
 			if( strcmp( names[i].name, right.names[i].name ) ) return true;
@@ -22,9 +23,9 @@ namespace XB{
 	//concatenation. Remember that order matters!
 	adata_indexer &adata_indexer::operator+( const adata_indexer &right ){
 		//first merge the diff tables. If there are conflicts, then throw
-		short unsigned candidate = 0;
+		int candidate = 0;
 		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ){
-			candidate = diffs[i] + right.diffs[i];
+			candidate = diffs[i] + right.diffs[i] +1;
 			if( candidate != diffs[i] && candidate != right.diffs[i] )
 				throw( error( "Colliding fields or integer overflow!", "XB::adata_indexer" ) );
 			diffs[i] = candidate;
