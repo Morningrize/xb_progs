@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
+#include <stdio.h>
+#include <algorithm>
 
 #include "xb_error.h"
 #include "xb_data.h"
@@ -74,7 +76,7 @@ namespace XB{
             bool operator==( const _xb_arb_data_indexer &right ){ return !( *this != right ); };
             _xb_arb_data_indexer &operator+( const _xb_arb_data_indexer &right );
             
-            unsigned size() { return names.size(); };
+            unsigned size() const { return names.size(); };
             adata_field &operator[]( unsigned i ){ return names[i]; };
             adata_field &at( unsigned i ){ return names.at(i); };
             std::vector< adata_field > names;
@@ -91,11 +93,14 @@ namespace XB{
 			_xb_arbitrary_data();
 			_xb_arbitrary_data( const adata_field *fld_array, size_t n_fld );
 			_xb_arbitrary_data( adata_indexer *indexer );
+			_xb_arbitrary_data( const adata_indexer &indexer );
 			_xb_arbitrary_data( const _xb_arbitrary_data &given );
 			~_xb_arbitrary_data();
 			
 			//important operators
 			_xb_arbitrary_data &operator=( const _xb_arbitrary_data &right );
+			_xb_arbitrary_data &copy() const; //returns a copy of this
+			                                  //but with its own indexer & no ua.
 			//get data from field, by name.
 			//use fsize( char *name ) to ge the returned buffer size
 			void *operator()( const char *name ) const;
@@ -117,8 +122,8 @@ namespace XB{
 			T tip( const char *name ) const {
                 		unsigned char i_fld = phash8( name );
 				void *head = (char*)_buf + _fields->diffs[i_fld];
-                if( head < _buf || _fields->diffs[i_fld] >= _buf_sz )
-                    return NULL;
+				if( head < _buf || _fields->diffs[i_fld] >= _buf_sz )
+					return NULL;
 				head = (int*)head + 1;
 				return *(T*)head;
 			};
@@ -130,7 +135,7 @@ namespace XB{
 			template< class T >
 			inline T &at( const char *name, int i ){ //note that this is NOT const
 				void *head = (char*)_buf + _fields->diffs[phash8( name )];
-				if( !head ) throw error( "Not a field!", "XB::adata::getfield" );
+				if( head < _buf ) throw error( "Not a field!", "XB::adata::getfield" );
 				int len = *(int*)head;
 				head = (int*)head + 1;
 				return ((T*)head)[i%len];
@@ -149,6 +154,7 @@ namespace XB{
 			                           adata_indexer *indexer );
 			friend _xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
 			                                       const _xb_arbitrary_data &two );
+			friend void adata_put( FILE *stream, const _xb_arbitrary_data &given );
 		private:
 			//the data buffer
 			//data is stored [int size|data]
@@ -156,9 +162,9 @@ namespace XB{
 			//can contain any type.
 			int _buf_sz;
 			void *_buf;
-            adata_indexer *_fields; //it's the indexer!
+            		adata_indexer *_fields; //it's the indexer!
 			_xb_arbitrary_data_uniform_array *_parent_array;
-            char _is_fields_owned;
+            		char _is_fields_owned;
 			
 			//an utility to has a field name
 			//pearson's has, 8 bits.
@@ -170,17 +176,17 @@ namespace XB{
 	} adata;
 
 	//----------------------------------------------------------------------------
-    //an array of UNIFORM adata entries --this should be the way to use this
-    //struct since the indexer has been rendered external
-	typedef std::vector< adata > _ua_type;
+    	//an array of UNIFORM adata entries --this should be the way to use this
+    	//struct since the indexer has been rendered external
+    	typedef std::vector< adata > _ua_type;
 	typedef _ua_type::iterator _ua_iter;
-    typedef class _xb_arbitrary_data_uniform_array {
+    	typedef class _xb_arbitrary_data_uniform_array {
 		public:
-            friend class _xb_arbitrary_data;
+            		friend class _xb_arbitrary_data;
             
 			_xb_arbitrary_data_uniform_array() {};
 			_xb_arbitrary_data_uniform_array( const adata_indexer &indexer ):
-                _indexer( indexer ) {};
+                	_indexer( indexer ) {};
 			_xb_arbitrary_data_uniform_array( const unsigned nb, const adata_indexer &idx );
 			_xb_arbitrary_data_uniform_array( const _xb_arbitrary_data_uniform_array &given );
 			_xb_arbitrary_data_uniform_array &operator=( const _xb_arbitrary_data_uniform_array& );
@@ -217,7 +223,7 @@ namespace XB{
 			void resize( unsigned n ){ _ua.resize( n ); };
 		private:
 			adata_indexer _indexer;
-            _ua_type _ua;
+			_ua_type _ua;
 	} adata_uniarr;
 	
 	//----------------------------------------------------------------------------
@@ -231,6 +237,7 @@ namespace XB{
                         adata_indexer *indexer = NULL );
 	_xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
 	                                const _xb_arbitrary_data &two );
+	void adata_put( FILE *stream, const adata &given );
 
 }
 #endif

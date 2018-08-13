@@ -40,6 +40,8 @@ endif
 compiler = $(shell expr `$(CXX) --version 2>/dev/null | grep -o LLVM`)
 ifneq "$(compiler)" "LLVM"
 	CXXFLAGS += -fopenmp -frounding-math
+else
+	CXXFLAGS += -mmacosx-version-min=10.9
 endif
 
 #-----------------------------------------------------------------------

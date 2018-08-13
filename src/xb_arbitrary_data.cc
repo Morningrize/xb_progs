@@ -1,7 +1,6 @@
 //implementation of xb_arbitrary_data.h
 
 #include "xb_arbitrary_data.h"
-#include <stdio.h>
 
 namespace XB{
 
@@ -44,7 +43,8 @@ namespace XB{
 		_buf( NULL ),
 		_buf_sz( 0 ),
 		_fields( new adata_indexer ),
-        _is_fields_owned( 1 )
+       		_is_fields_owned( 1 ),
+       		_parent_array( NULL )
 	{
 		//just banally init the event_holder members
 		n = 0;
@@ -59,8 +59,9 @@ namespace XB{
 	adata::_xb_arbitrary_data( const adata_field *fld_array, size_t n_fld ):
 		_buf( NULL ),
 		_buf_sz( 0 ),
-		_fields( new adata_indexer( n_fld ) ),
-		_is_fields_owned( 1 )
+		_fields( new adata_indexer ),
+		_is_fields_owned( 1 ),
+		_parent_array( NULL )
 	{
 		n = 0;
 		evnt = 0;
@@ -69,13 +70,14 @@ namespace XB{
 		in_A_on_Z = 0;
 		
 		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fields->diffs[i] = -1;
-		for( int i=0; i < n_fld; ++i ) dofield( fld_array[i], NULL );
+		for( int i=0; i < n_fld; ++i ){ puts( fld_array[i].name ); dofield( fld_array[i], NULL ); puts( _fields->at(i).name ); }
 	}
 	
 	adata::_xb_arbitrary_data( const adata &given ):
 		_buf( NULL ),
 		_buf_sz( given._buf_sz ),
-		_is_fields_owned( given._is_fields_owned ) //ownership is also copied
+		_is_fields_owned( given._is_fields_owned ), //ownership is also copied
+		_parent_array( given._parent_array )
 	{
 		n = given.n;
 		evnt = given.evnt;
@@ -93,13 +95,17 @@ namespace XB{
 		_buf = malloc( given._buf_sz );
 		if( !_buf ) throw error( "Memory error!", "XB::adata::assign" );
 		memcpy( _buf, given._buf, given._buf_sz );
+		
+		//if the copied structure had a parent array, this must also be in it.
+		if( _parent_array ) _parent_array->_ua.push_back( *this );
 	}
 	
 	adata::_xb_arbitrary_data( adata_indexer *idx ):
 		_buf( NULL ),
 		_buf_sz( 0 ),
 		_fields( idx ),
-		_is_fields_owned( 0 )
+		_is_fields_owned( 0 ),
+		_parent_array( NULL )
 	{
 		n = 0;
 		evnt = 0;
@@ -109,11 +115,32 @@ namespace XB{
 	
 		for( int i=0; i < _fields->size(); ++i ) dofield( _fields->names[i], NULL );
 	}
+	
+	adata::_xb_arbitrary_data( const adata_indexer &idx ):
+		_buf( NULL ),
+		_buf_sz( 0 ),
+		_fields( new adata_indexer ),
+		_is_fields_owned( 1 ),
+		_parent_array( NULL )
+	{
+		n = 0;
+		evnt = 0;
+		tpat = 0;
+		in_Z = 0;
+		in_A_on_Z = 0;
+		for( int i=0; i < idx.size(); ++i ){ dofield( idx.names[i], NULL ); }
+	}
 		
 	//dtor:
 	adata::~_xb_arbitrary_data(){
+		//no scope leakages under my watch
+        	//why this? Look at operator= and cpyctor.
+        	if( _parent_array ){
+        		_ua_iter me = std::find( _parent_array->begin(), _parent_array->end(), *this );
+        		_parent_array->erase( me );
+        	}
 		if( _buf ) free( _buf );
-        if( _is_fields_owned ) delete _fields;
+        	if( _is_fields_owned ) delete _fields;
 	}
 	
 	//----------------------------------------------------------------------------
@@ -148,14 +175,35 @@ namespace XB{
 		else //if it's not owned, then we just copy the pointer to the external one
 			_fields = given._fields;
 		_is_fields_owned = given._is_fields_owned;
+		
+		//same as copy constructor: copying an element of an array
+		//inserts the copied element into the array
+		_parent_array = given._parent_array;
+		if( _parent_array ){ puts( "wrong" ); _parent_array->_ua.push_back( *this ); }
 
 		//copy the buffer
 		if( _buf ) free( _buf );
 		_buf = malloc( given._buf_sz );
 		if( !_buf ) throw error( "Memory error!", "XB::adata::assign" );
 		memcpy( _buf, given._buf, given._buf_sz );
-		
 		return *this;
+	}
+	
+	//----------------------------------------------------------------------------
+	//not really an operator but logially here
+	adata &adata::copy() const {
+		adata newborn;
+		newborn.n = n;
+		newborn.evnt = evnt;
+		newborn.tpat = tpat;
+		newborn.in_Z = in_Z;
+		newborn.in_A_on_Z = in_A_on_Z;
+		newborn._buf_sz = _buf_sz;
+		newborn._fields = new adata_indexer( *_fields );
+		newborn._is_fields_owned = 1;
+		newborn._buf = malloc( _buf_sz );
+		memcpy( newborn._buf, _buf, _buf_sz );
+		return newborn;
 	}
 	
 	//----------------------------------------------------------------------------
@@ -212,8 +260,12 @@ namespace XB{
 		if( _fields->diffs[i_fld] < 0 || _fields->diffs[i_fld] >= _buf_sz ){
 			_buf = realloc( _buf, _buf_sz+fld.size );
 			
-			//save the new field poiner
-			_fields->diffs[i_fld] = _buf_sz;
+			//save the new field if we have ownership
+			//otherwise, the parent array did it (or you lost)
+			if( _is_fields_owned ){
+				 _fields->names.push_back( fld );
+				_fields->diffs[i_fld] = _buf_sz;
+			}
 			head = (char*)_buf + _fields->diffs[i_fld]; //and put it in the head
 			*(int*)head = fld.size; //write the size
 			head = (int*)head + 1; //move the head
@@ -226,7 +278,6 @@ namespace XB{
 			//finally, update the buffer size
 			//and push the new field in the field list
 			_buf_sz += fld.size + sizeof(int);
-			if( _is_fields_owned ) _fields->names.push_back( fld );
 		} else { //the field is populated
 			if( !buf ) return; //do nothing
 			if( fld.size != *(int*)head ) //freak out
@@ -364,8 +415,10 @@ namespace XB{
 		
 		//do we touch all the events, so that we don't need to discover at the moment's
 		//notice that we need to allocate memory? Yeeah
-		//NOTE: this will also set the correct diff.
-		for( int i=0; i < size(); ++i ) this->at(i).dofield( given, NULL );
+		_indexer.diffs[adata::phash8( given.name )] = this->at(0)._buf_sz;
+		for( int i=0; i < size(); ++i ){
+			this->at(i).dofield( given, NULL );
+		}
 	}
 	
 	//----------------------------------------------------------------------------
@@ -563,4 +616,25 @@ namespace XB{
 		return merged;
 	}
 
+	//----------------------------------------------------------------------------
+	//put the structure in clear text onto a stream
+	void adata_put( FILE *stream, const adata &given ){
+		fprintf( stream, "XB Arbitrary data structure {\n" );
+		char *name, *tip;
+		int size;
+		for( int f=0; f < given.nf(); ++f ){
+			name = given._fields->at(f).name;
+			size = given._fields->at(f).size;
+			fprintf( stream, "\tField: %s:%d {\n\t\t",
+			         name, size );
+			tip = (char*)given._buf + given._fields->diffs[adata::phash8( name )] + sizeof(int);
+			for( int i=0; i < size; ++i ){
+				fprintf( stream, "%02hhx ", *(tip+i) );
+				if( !((i+1)%16) ) fprintf( stream, "\n\t\t" );
+				else if( !((i+1)%4) ) fprintf( stream, "    " );
+			}
+			fprintf( stream, "\n\t}\n" );
+		}
+		fprintf( stream, "}\n" );
+	}
 } //end of namespace
