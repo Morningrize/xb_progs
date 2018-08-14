@@ -89,11 +89,11 @@ XB::adata test_adata( XB::adata_indexer idx ){
     puts( "\tOld style constructor (b)" );
     XB::adata_put( stdout, b );
     
-    /*XB::adata c( idx );
+    XB::adata c( idx );
     puts( "\tIndexer constructor (c)" );
     XB::adata_put( stdout, c );
     
-    /*a = c.copy();
+    a = c.copy();
     puts( "\tCopy function (c -> a)" );
     XB::adata_put( stdout, a );
     
@@ -111,10 +111,10 @@ XB::adata test_adata( XB::adata_indexer idx ){
     XB::adata_put( stdout, b );
     
     std::vector< XB::adata_field > fld = c.lsfields();
-    puts( "\tField list (a)" );
+    puts( "\tField list (c)" );
     for( int i=0; i < fld.size(); ++i ){
         printf( "\t---%s:%d\n", fld[i].name, fld[i].size );
-    }*/
+    }
     return a;
 }
     

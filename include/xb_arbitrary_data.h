@@ -99,7 +99,7 @@ namespace XB{
 			
 			//important operators
 			_xb_arbitrary_data &operator=( const _xb_arbitrary_data &right );
-			_xb_arbitrary_data &copy() const; //returns a copy of this
+			_xb_arbitrary_data copy() const; //returns a copy of this
 			                                  //but with its own indexer & no ua.
 			//get data from field, by name.
 			//use fsize( char *name ) to ge the returned buffer size

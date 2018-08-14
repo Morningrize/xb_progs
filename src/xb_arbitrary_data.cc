@@ -70,7 +70,7 @@ namespace XB{
 		in_A_on_Z = 0;
 		
 		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) _fields->diffs[i] = -1;
-		for( int i=0; i < n_fld; ++i ){ puts( fld_array[i].name ); dofield( fld_array[i], NULL ); puts( _fields->at(i).name ); }
+		for( int i=0; i < n_fld; ++i ){ dofield( fld_array[i], NULL ); }
 	}
 	
 	adata::_xb_arbitrary_data( const adata &given ):
@@ -191,7 +191,7 @@ namespace XB{
 	
 	//----------------------------------------------------------------------------
 	//not really an operator but logially here
-	adata &adata::copy() const {
+	adata adata::copy() const {
 		adata newborn;
 		newborn.n = n;
 		newborn.evnt = evnt;
@@ -258,7 +258,7 @@ namespace XB{
 		void *head = (char*)_buf + _fields->diffs[i_fld];
 		
 		if( _fields->diffs[i_fld] < 0 || _fields->diffs[i_fld] >= _buf_sz ){
-			_buf = realloc( _buf, _buf_sz+fld.size );
+			_buf = realloc( _buf, _buf_sz+fld.size+sizeof( int ) );
 			
 			//save the new field if we have ownership
 			//otherwise, the parent array did it (or you lost)
