@@ -9,6 +9,7 @@
 char fields[256][16];
 XB::adata_indexer test_indexer( int fcount );
 XB::adata test_adata( XB::adata_indexer idx );
+XB::adata_uniarr test_uniarr( XB::adata_indexer idx );
 
 int main( int argc, char **argv ){
     int fcount = 0;
@@ -75,6 +76,8 @@ XB::adata_indexer test_indexer( int fcount ){
     for( int i=2*fcount; i < XB_ADATA_NB_FIELDS; ++i ) idx_again.diffs[i] = -1;
 
     XB::adata a = test_adata( idx_again );
+    
+    XB::adata_uniarr ua = test_uniarr( idx_again );
 
     return idx_again;
 }
@@ -115,6 +118,39 @@ XB::adata test_adata( XB::adata_indexer idx ){
     for( int i=0; i < fld.size(); ++i ){
         printf( "\t---%s:%d\n", fld[i].name, fld[i].size );
     }
+    
+    void *buf;
+    XB::adata_getlbuf( &buf, c );
+    puts( "\tLinearized c" );
+    XB::adata_fromlbuf( a, buf );
+    puts( "\tDelinearized in a" );
+    XB::adata_put( stdout, a );
+    
+    a.clear();
+    a.dofield( "try", sizeof(int), &smt );
+    a.dofield( "this", sizeof(int), &smt );
+    XB::adata d = XB::adata_merge( a, c );
+    puts( "\tMerged a{ try, this } and c in d" );
+    XB::adata_put( stdout, a );
+    XB::adata_put( stdout, c );
+    XB::adata_put( stdout, d );
+    
+    return a;
+}
+
+//---------------------------------------------------------------------------------
+//and now the big one: the uniform array
+XB::adata_uniarr test_uniarr( XB::adata_indexer idx ){
+    XB::adata_uniarr a;
+    puts( "\tUA default constructed" );
+    
+    XB::adata_uniarr b( idx );
+    puts( "\tUA constructed with indexer" );
+    
+    XB::adata_uniarr c( 3, idx );
+    puts( "\tUA constructed with elements and indexer" );
+    for( int i=0; i < 3; ++i ) XB::adata_put( stdout, c[i] );
+    
     return a;
 }
     

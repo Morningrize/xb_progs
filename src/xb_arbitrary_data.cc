@@ -262,10 +262,9 @@ namespace XB{
 			
 			//save the new field if we have ownership
 			//otherwise, the parent array did it (or you lost)
-			if( _is_fields_owned ){
-				 _fields->names.push_back( fld );
-				_fields->diffs[i_fld] = _buf_sz;
-			}
+			if( _is_fields_owned ) _fields->names.push_back( fld );
+            _fields->diffs[i_fld] = _buf_sz;
+			
 			head = (char*)_buf + _fields->diffs[i_fld]; //and put it in the head
 			*(int*)head = fld.size; //write the size
 			head = (int*)head + 1; //move the head
@@ -386,7 +385,12 @@ namespace XB{
 		_indexer( idx ),
 		_ua( nb )
 	{
+        puts( "pip" );
 		adata tmp( &_indexer );
+        puts( "pip" );
+        tmp.subscribe_uniarr( this );
+        puts( "pip" );
+        
 		for( int i=0; i < nb; ++i ) _ua[i] = tmp;
 	}
 	
@@ -597,8 +601,8 @@ namespace XB{
 	//the structure merger!
 	//NOTE: the merger is ORDERED. merges two into one
 	adata adata_merge( const adata &one, const adata &two ){
-		if( !memcmp( &one.n, &two.n, sizeof( event_holder ) ) )
-			throw( error( "structures relate to  events!", "XB::adata_merge" ) );
+		if( memcmp( &one.n, &two.n, sizeof( event_holder ) ) )
+			throw( error( "structures relate to different events!", "XB::adata_merge" ) );
 		
 		//make the new indexer
 		adata merged( one );
@@ -606,12 +610,13 @@ namespace XB{
 		merged._is_fields_owned = 1;
 		adata_indexer itwo = *two._fields;
 		
-		for( int i=0; i < itwo.names.size(); ++i )
+		for( int i=0; i < XB_ADATA_NB_FIELDS; ++i )
 			if( itwo.diffs[i] >= 0 ) itwo.diffs[i] += one._buf_sz;
 		
 		*merged._fields = *merged._fields + itwo; //NOTE: this will throw if not compatible
 		merged._buf = realloc( merged._buf, merged._buf_sz + two._buf_sz );
 		memcpy( (char*)merged._buf + merged._buf_sz, two._buf, two._buf_sz );
+        merged._buf_sz += two._buf_sz;
 		
 		return merged;
 	}
