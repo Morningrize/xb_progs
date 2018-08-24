@@ -39,6 +39,7 @@ namespace XB{
 			std::vector<cluster> clusters; //array of culsters
 	} clusterZ;
 	
+    extern xb_ball globber_ball;
 	
 	//this structure allows to keep track of the energy
 	//and the index of a crystal
