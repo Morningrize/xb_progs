@@ -6,14 +6,13 @@ namespace XB{
 
 	//============================================================================
 	//adata_indexer operators
-
-	//----------------------------------------------------------------------------
+	
+    //----------------------------------------------------------------------------
 	//comparison. See the NOTE on field ordering in the header!
 	bool adata_indexer::operator!=( const adata_indexer &right ){
 		if( names.size() != right.names.size() ) return true;
-		if( memcmp( diffs, right.diffs, XB_ADATA_NB_FIELDS*sizeof( int ) ) )
-			return true;
-		for( int i=0; i < names.size(); ++i )
+        if( memcmp( diffs, right.diffs, XB_ADATA_NB_FIELDS*sizeof(int) ) ) return true;
+        for( int i=0; i < names.size(); ++i )
 			if( strcmp( names[i].name, right.names[i].name ) ) return true;
 		return false;
 	}
@@ -385,11 +384,8 @@ namespace XB{
 		_indexer( idx ),
 		_ua( nb )
 	{
-        puts( "pip" );
 		adata tmp( &_indexer );
-        puts( "pip" );
         tmp.subscribe_uniarr( this );
-        puts( "pip" );
         
 		for( int i=0; i < nb; ++i ) _ua[i] = tmp;
 	}
@@ -438,15 +434,15 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//push and SUBSCRIBE an arbitrary data
     void adata_uniarr::push_back( const adata &given ){
-		this->push_back( given );
+		_ua.push_back( given );
 		back().subscribe_uniarr( this );
 	}
 	
 	//----------------------------------------------------------------------------
 	//pop and unsubscribe (pop_back will destroy the element)
     adata adata_uniarr::pop_back(){
-		adata ad = this->back();
-		this->pop_back();
+		adata ad = _ua.back();
+		_ua.pop_back();
 		ad.unsubscribe_uniarr();
 		return ad;
 	}

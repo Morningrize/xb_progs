@@ -162,9 +162,9 @@ namespace XB{
 			//can contain any type.
 			int _buf_sz;
 			void *_buf;
-            		adata_indexer *_fields; //it's the indexer!
+            adata_indexer *_fields; //it's the indexer!
+            char _is_fields_owned;
 			_xb_arbitrary_data_uniform_array *_parent_array;
-            		char _is_fields_owned;
 			
 			//an utility to has a field name
 			//pearson's has, 8 bits.
@@ -220,7 +220,6 @@ namespace XB{
 			adata &back(){ return _ua.back(); };
 			bool empty() const { return _ua.empty(); };
 			void clear(){ _ua.clear(); _indexer = adata_indexer(); };
-			void resize( unsigned n ){ _ua.resize( n ); };
 		private:
 			adata_indexer _indexer;
 			_ua_type _ua;

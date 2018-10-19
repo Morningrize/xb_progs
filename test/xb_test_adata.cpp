@@ -39,6 +39,12 @@ int main( int argc, char **argv ){
     puts( ">>>PHASE 1: testing the indexer" );
     XB::adata_indexer idx = test_indexer( fcount );
     
+    //puts( ">>>PHASE 2: testing the structure" );
+    //XB::adata a = test_adata( idx );
+    
+    puts( ">>>PHASE 3: testing the uniform array" );
+    XB::adata_uniarr ua = test_uniarr( idx );
+    
     //TBC
     return 0;
 }
@@ -60,7 +66,7 @@ XB::adata_indexer test_indexer( int fcount ){
         printf( "\tfield %s:\n", fields[i] );
         printf( "\t\tOriginal: %s:%d:%d; copied %s:%d:%d\n",
                 idx[i].name, idx[i].size, idx.diffs[i],
-                idx_again[i].name, idx_again[i].size, idx.diffs[i] );
+                idx_again[i].name, idx_again[i].size, idx_again.diffs[i] );
         idx[i].name[0] = 'Z';
         idx.diffs[i] = -1;
     }
@@ -74,10 +80,6 @@ XB::adata_indexer test_indexer( int fcount ){
     //reset the structure for sane later usage
     for( int i=0; i < 2*fcount; ++i ) idx_again.diffs[i] = 4*i*sizeof( float );
     for( int i=2*fcount; i < XB_ADATA_NB_FIELDS; ++i ) idx_again.diffs[i] = -1;
-
-    XB::adata a = test_adata( idx_again );
-    
-    XB::adata_uniarr ua = test_uniarr( idx_again );
 
     return idx_again;
 }
@@ -146,12 +148,55 @@ XB::adata_uniarr test_uniarr( XB::adata_indexer idx ){
     
     XB::adata_uniarr b( idx );
     puts( "\tUA constructed with indexer" );
+    XB::adata_indexer idx_again = b.get_indexer();
+    for( int i=0; i < idx_again.size(); ++i ){
+        printf( "\t\tOriginal: %s:%d:%d; copied %s:%d:%d\n",
+                idx[i].name, idx[i].size, idx.diffs[i],
+                idx_again[i].name, idx_again[i].size, idx_again.diffs[i] );
+    }
     
     XB::adata_uniarr c( 3, idx );
     puts( "\tUA constructed with elements and indexer" );
-    for( int i=0; i < 3; ++i ) XB::adata_put( stdout, c[i] );
+    for( int i=0; i < c.size(); ++i ) XB::adata_put( stdout, c[i] );
     
-    return a;
+    puts( "\tUA pop back" );
+    XB::adata popped = c.pop_back();
+    printf( "\tsize: %d\n", c.size() );
+    puts( "\tpopped element:" );
+    XB::adata_put( stdout, popped );
+    
+    puts( "\tUA push back" );
+    //NOTE: this won't work because idx is broken! XB::adata pushed( c.get_indexer() );
+    XB::adata pushed( popped );
+    XB::adata_put( stdout, pushed );
+    c.push_back( pushed );
+    printf( "\tsize: %d\n", c.size() );
+    for( int i=0; i < c.size(); ++i ) XB::adata_put( stdout, c[i] );
+    
+    puts( "\tUA push indexer" );
+    XB::adata_field f = { "new", 8 };
+    c.push_indexer( f );
+    XB::adata_put( stdout, c[0] );
+    
+    puts( "\tUA pop indexer" );
+    c.pop_indexer();
+    XB::adata_put( stdout, c[0] );
+    
+    /*NOTE: it works, but idx is broken so here it doesn't
+    puts( "\tUA operator+ and =" );
+    for( int i=0; i < c.size(); ++i ) b.push_back( XB::adata( idx ) );
+    b.push_indexer( f );
+    b = b+c;
+    printf( "\tsize: %d\n", b.size() );
+    for( int i=0; i < b.size(); ++i ) XB::adata_put( stdout, b[i] );
+    */
+    
+    puts( "\tUA clear, isempty" );
+    b.clear();
+    printf( "\tsize: %d\n", b.size() );
+    if( b.empty() ) puts( "\tcorrect" );
+    
+    return c;
 }
     
     
