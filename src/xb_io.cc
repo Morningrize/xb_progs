@@ -34,7 +34,7 @@ void XB::load_header( const char *f_name, io_header &hdr ){
 	strcat( command, f_name );
 	if( system( command ) ) throw( XB::error( "File doesn't exist!", "XB::load" ) );
 	
-	strcpy( command, "bunzip2 -c " );
+	strcpy( command, "pbunzip2 -c " );
 	strcat( command, f_name );
 	
 	//open the pipe and test
@@ -138,7 +138,7 @@ void XB::write( FILE* f_out, std::vector<XB::data> &xb_book, int header ){
 void XB::write( char* f_name, std::vector<XB::data> &xb_book, int header ){
 	//build the command for the pipe
 	char command[310];
-	strcpy( command, "bzip2 -z > " );
+	strcpy( command, "pbzip2 -c > " );
 	strcat( command, f_name );
 	
 	//open the pipe and test
@@ -228,7 +228,7 @@ void XB::load( char* f_name, std::vector<XB::data> &xb_book, long unsigned cnt )
 	strcat( command, f_name );
 	if( system( command ) ) throw( XB::error( "File doesn't exist!", "XB::load" ) );
 	
-	strcpy( command, "bunzip2 -c " );
+	strcpy( command, "pbunzip2 -c " );
 	strcat( command, f_name );
 	
 	//open the pipe and test
@@ -274,7 +274,7 @@ void XB::write( FILE *f_out, std::vector<XB::adata> &xb_book, int header ){
 void XB::write( char* f_name, std::vector<XB::adata> &xb_book, int header ){
 	//build the command for the pipe
 	char command[310];
-	strcpy( command, "bzip2 -z > " );
+	strcpy( command, "pbzip2 -c > " );
 	strcat( command, f_name );
 	
 	//open the pipe and test
@@ -336,7 +336,7 @@ void XB::load( char* f_name, std::vector<XB::adata> &xb_book, long unsigned cnt 
 	strcat( command, f_name );
 	if( system( command ) ) throw( XB::error( "File doesn't exist!", "XB::load" ) );
 	
-	strcpy( command, "bunzip2 -c " );
+	strcpy( command, "pbunzip2 -c " );
 	strcat( command, f_name );
 	
 	//open the pipe and test
@@ -402,7 +402,7 @@ void XB::write( FILE* f_out, std::vector<XB::track_info> &xb_book, int header ){
 void XB::write( char* f_name, std::vector<XB::track_info> &xb_book, int header ){
 	//build the command for the pipe
 	char command[310];
-	strcpy( command, "bzip2 -z > " );
+	strcpy( command, "pbzip2 -c > " );
 	strcat( command, f_name );
 	
 	//open the pipe and test
@@ -485,7 +485,7 @@ void XB::load( char* f_name, std::vector<XB::track_info> &xb_book, long unsigned
 	strcat( command, f_name );
 	if( system( command ) ) throw( XB::error( "File doesn't exist!", "XB::load" ) );
 
-	strcpy( command, "bunzip2 -c " );
+	strcpy( command, "pbunzip2 -c " );
 	strcat( command, f_name );
 	
 	//open the pipe and test
@@ -566,7 +566,7 @@ void XB::write( FILE* f_out, std::vector<XB::clusterZ> &event_klZ, int header ){
 void XB::write( char* f_name, std::vector<XB::clusterZ> &event_klZ, int header ){
 	//build the command for the pipe
 	char command[310];
-	strcpy( command, "bzip2 -z > " );
+	strcpy( command, "pbzip2 -c > " );
 	strcat( command, f_name );
 	
 	//open the pipe and test
@@ -645,7 +645,7 @@ void XB::load( char* f_name, std::vector<XB::clusterZ> &event_klZ, long unsigned
 	strcat( command, f_name );
 	if( system( command ) ) throw( XB::error( "File doesn't exist!", "XB::load" ) );
 	
-	strcpy( command, "bunzip2 -c " );
+	strcpy( command, "pbunzip2 -c " );
 	strcat( command, f_name );
 	
 	//open the pipe and test

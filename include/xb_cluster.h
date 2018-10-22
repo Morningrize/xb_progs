@@ -1,10 +1,6 @@
 /*this is the interface for a clustering algorithm for the crystall ball */
 /*it has been develoed for use with DATA and SIMULATIONS relative to     */
 /*EXPERIMENT s412. For other purposes, please ask.                       */
-/*                                                                       */
-/*The algorithm itself works (sort of) like K-means, although, due to    */
-/*the not huge number of crystals, it will usually behave in a simpler   */
-/*way.                                                                   */
 
 #ifndef XB_CLUSTER__H
 #define XB_CLUSTER__H
@@ -22,7 +18,7 @@
 //TODO: the time info SHOULD be used, but it isn't yet
 //      also, it's not checked any longer because it create problems
 //      with minimum bias events (?)
-#define IS_LIST_VALID( l ) l.i < 1 || l.i > 162 /*|| l.t == 0*/ || l.e == 0
+#define IS_LIST_INVALID( l ) l.i < 1 || l.i > 162 /*|| l.t == 0*/ || l.e == 0
 
 namespace XB{
 	//this structure holds the information about one cluster
@@ -43,6 +39,7 @@ namespace XB{
 			std::vector<cluster> clusters; //array of culsters
 	} clusterZ;
 	
+    extern xb_ball globber_ball;
 	
 	//this structure allows to keep track of the energy
 	//and the index of a crystal
@@ -76,12 +73,23 @@ namespace XB{
 	bool Kmeans_centroid_update( clusterZ&, unsigned int ); //update the centroids
 	***/
 	
+	//calls the algorithm pointed at by function (k_alg), which should take in
+	//a data structure (an event), an integer (order) and must return a cluster
+	clusterZ make_clusters( const data &evnt, unsigned int order,
+	                        cluster (*k_alg)( const data&, unsigned int ) );
+	
 	//this function uses a neares-neighbour clustering
 	//kicks in when there are less hits (<5).
-	clusterZ make_clusters_NN( const data &evnt, unsigned int order );
 	cluster make_one_cluster_NN( const data &evnt, unsigned int order ); //builds a near-neighbours
 	                                                                     //based cluster	
-		
+	//this function are a more refined nearest neighbour algorithm
+	//they essentially follow the energy deposits up to "order" many
+	cluster make_one_cluster_bead( const data &evnt, unsigned int order );
+	//the two fitted parameters I'm using here
+#define LUT_INTERCEPT -0.10937
+#define LUT_FACTOR     1.90571
+	unsigned int beading_order( float e ); //self limiting tool
+	
 	//aux functions
 	oed* make_energy_list( const data &evnt ); //get a sorted list, by energy, of the event
 	long double angular_distance( long double, long double,

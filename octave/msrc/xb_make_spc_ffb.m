@@ -2,7 +2,7 @@
 %of some data set ({a,}data or cluster) for the various interesting section of
 %the CB
 %
-% [hst_ffb, binz_ffb, herr_ffb] = xb_make_spc_ffb( dataset, [figure] )
+% [hst_ffb, binz_ffb, herr_ffb] = xb_make_spc_ffb( dataset, bin, [figure] )
 %
 
 function [hst_ffb, binz_ffb, herr_ffb] = xb_make_spc_ffb( dataset, bin, varargin )
@@ -26,17 +26,17 @@ function [hst_ffb, binz_ffb, herr_ffb] = xb_make_spc_ffb( dataset, bin, varargin
 	herr_ffb = cell( 3, 1 );
 	nrg = cell( 3, 1 );
 	icbf = [xb_ball_neigh( 81, 5 ).i];
-	icbb = [xb_ball_neigh( 82, 5 ).i];
+	[~, icbb] = setdiff( [xb_ball_at( [1:162] ).i], icbf );
 	ohf = @(p) xb_op_cbi( p, icbf );
 	ohb = @(p) xb_op_cbi( p, icbb );
 	
-	if iswhat == 'data'
+	if strcmp( iswhat, 'data' )
 		front = xb_data_cut_on_field( dataset, ohf, 'i' );
 		back = xb_data_cut_on_field( dataset, ohb, 'i' );
 		nrg(1) = xb_data_nrg( dataset );
 		nrg(2) = xb_data_nrg( front );
 		nrg(3) = xb_data_nrg( back );
-	elseif iswhat == 'cluster'
+	elseif strcmp( iswhat, 'cluster' )
 		front = xb_cluster_cut_on_field( dataset, ohf, 'centroid_id' );
 		back = xb_cluster_cut_on_field( dataset, ohb, 'centroid_id' );
 		nrg(1) = xb_cluster_nrg( dataset );
@@ -55,9 +55,10 @@ function [hst_ffb, binz_ffb, herr_ffb] = xb_make_spc_ffb( dataset, bin, varargin
 		stairs( binz_ffb{2}, hst_ffb{2}, 'linewidth', 2 );
 		stairs( binz_ffb{3}, hst_ffb{3}, 'linewidth', 2 );
 		set( gca, 'fontsize', 24, 'linewidth', 2, 'yscale', 'log' );
+		grid on;
 		if isscalar( bin ); bstep = bin;
 		else bstep = bin(2)-bin(1); end
-		ylabel( ['#/',bstep,'KeV'] );
+		ylabel( ['#/',num2str(bstep),'KeV'] );
 		xlabel( 'KeV' );
 		legend( { 'full CB', 'front CB', 'back CB' } );
 	end
