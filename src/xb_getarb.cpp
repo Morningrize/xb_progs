@@ -92,7 +92,7 @@ int main( int argc, char **argv ){
 	
 	//load all the files
 	if( flagger & VERBOSE ) puts( "Loading files..." );
-	std::vector<XB::adata> book, buf;
+	XB::adata_uniarr book, buf;
 	for( int f=0; f < in_fcount; ++f ){
 		try{
 			if( flagger & VERBOSE ) printf( "\tLoading %s...\n", in_fname[f] );
@@ -107,7 +107,7 @@ int main( int argc, char **argv ){
 	
 	//and write all the data
 	if( flagger & VERBOSE ) puts( "Putting data..." );
-	if( flagger & OUT_FLAG ) XB::write( out_fname, book );
+	if( flagger & OUT_FLAG ) XB::write( out_fname );
 	else XB::write( stdout, book );
 	
 	if( flagger & VERBOSE ) puts( "Done. Goodbye." );

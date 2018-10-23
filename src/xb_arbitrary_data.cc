@@ -397,7 +397,19 @@ namespace XB{
 		//set them right without resetting the data structs.
 		for( int i=0; i < _ua.size(); ++i ) _ua[i]._fields = &_indexer;
 	}
+	
+	adata_uniarr::_xb_arbitrary_data_uniform_array( const _ua_type &vec ):
+        _ua( vec )
+    {
+            if( !_ua.empty() ){
+                _indexer = *_ua[0].get_indexer();
+                for( int i=0; i < _ua.size() ++i ) _ua[i].subscribe_uniarr( this );
+            }
+    }
 
+	//----------------------------------------------------------------------------
+	//mwthods:
+	
 	//----------------------------------------------------------------------------
 	//set the indexer to an existing uniform array
 	//note that this will destroy the content if it's different from the
@@ -434,6 +446,7 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//push and SUBSCRIBE an arbitrary data
     void adata_uniarr::push_back( const adata &given ){
+        if( _ua.size() == 0 ) set_indexer( *given.get_indexer() );
 		_ua.push_back( given );
 		back().subscribe_uniarr( this );
 	}
@@ -470,6 +483,13 @@ namespace XB{
 		for( _ua_iter i=first; i != last; ++i ) i->unsubscribe_uniarr();
 		return _ua.erase( first, last );
 	}
+	
+	//----------------------------------------------------------------------------
+    _ua_type adata_uniarr::get_vector(){
+        _ua_type vec = _ua;
+        for( int i=0; i < vec.size(); ++i ) vec[i].unsubscribe_uniarr();
+        return vec;
+    }
 	
 	//----------------------------------------------------------------------------
 	//operators:

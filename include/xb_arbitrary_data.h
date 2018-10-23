@@ -176,19 +176,20 @@ namespace XB{
 	} adata;
 
 	//----------------------------------------------------------------------------
-    	//an array of UNIFORM adata entries --this should be the way to use this
-    	//struct since the indexer has been rendered external
-    	typedef std::vector< adata > _ua_type;
+    //an array of UNIFORM adata entries --this should be the way to use this
+    //struct since the indexer has been rendered external
+    typedef std::vector< adata > _ua_type;
 	typedef _ua_type::iterator _ua_iter;
-    	typedef class _xb_arbitrary_data_uniform_array {
+    typedef class _xb_arbitrary_data_uniform_array {
 		public:
-            		friend class _xb_arbitrary_data;
+            friend class _xb_arbitrary_data;
             
 			_xb_arbitrary_data_uniform_array() {};
 			_xb_arbitrary_data_uniform_array( const adata_indexer &indexer ):
                 	_indexer( indexer ) {};
 			_xb_arbitrary_data_uniform_array( const unsigned nb, const adata_indexer &idx );
 			_xb_arbitrary_data_uniform_array( const _xb_arbitrary_data_uniform_array &given );
+            _xb_arbitrary_data_uniform_array( const _ua_type &vec );
 			_xb_arbitrary_data_uniform_array &operator=( const _xb_arbitrary_data_uniform_array& );
 			_xb_arbitrary_data_uniform_array &operator+( const _xb_arbitrary_data_uniform_array &right );
 			
@@ -220,6 +221,7 @@ namespace XB{
 			adata &back(){ return _ua.back(); };
 			bool empty() const { return _ua.empty(); };
 			void clear(){ _ua.clear(); _indexer = adata_indexer(); };
+            _ua_type get_vector();
 		private:
 			adata_indexer _indexer;
 			_ua_type _ua;
