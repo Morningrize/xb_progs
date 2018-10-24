@@ -318,7 +318,7 @@ void XB::load( FILE *f_in, XB::adata_uniarr &xb_book,long unsigned cnt ){
 		//and get the full linear buffer
 		if( fb_size > current_sz ){
             buf = realloc( buf, fb_size );
-            current_sz = fb_size
+            current_sz = fb_size;
         }
 		if( !buf ) throw( "Memory error!", "XB::load" );
 		fread( buf, fb_size, 1, f_in );
@@ -358,7 +358,7 @@ void XB::load( char* f_name, XB::adata_uniarr &xb_book, long unsigned cnt ){
 }
 
 //std::string interface for the loader.
-void XB::load( std::string f_name, std::vector<XB::adata> &xb_book, long unsigned cnt ){
+void XB::load( std::string f_name, XB::adata_uniarr &xb_book, long unsigned cnt ){
 	XB::load( f_name.c_str(), xb_book, cnt );
 }
 

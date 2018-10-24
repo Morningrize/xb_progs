@@ -402,8 +402,8 @@ namespace XB{
         _ua( vec )
     {
             if( !_ua.empty() ){
-                _indexer = *_ua[0].get_indexer();
-                for( int i=0; i < _ua.size() ++i ) _ua[i].subscribe_uniarr( this );
+                _indexer = _ua[0].get_indexer();
+                for( int i=0; i < _ua.size(); ++i ) _ua[i].subscribe_uniarr( this );
             }
     }
 
@@ -446,7 +446,7 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//push and SUBSCRIBE an arbitrary data
     void adata_uniarr::push_back( const adata &given ){
-        if( _ua.size() == 0 ) set_indexer( *given.get_indexer() );
+        if( _ua.size() == 0 ) set_indexer( given.get_indexer() );
 		_ua.push_back( given );
 		back().subscribe_uniarr( this );
 	}

@@ -65,9 +65,9 @@ namespace XB{
 		{ NULL, 0 } --> Is the end of the array.
 	};
 	*****************************************************************************/
-	void arb_reader( std::vector<XB::adata> &xb_book,
+	void arb_reader( XB::adata_uniarr &xb_book,
 	                 std::string f_name, const adata_field *fields );
-	void arb_reader( std::vector<XB::adata> &xb_book,
+	void arb_reader( XB::adata_uniarr &xb_book,
 	                 const char *f_name, const adata_field *fields );
 }
 #endif

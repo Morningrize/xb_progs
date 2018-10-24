@@ -107,7 +107,7 @@ int main( int argc, char **argv ){
 	
 	//and write all the data
 	if( flagger & VERBOSE ) puts( "Putting data..." );
-	if( flagger & OUT_FLAG ) XB::write( out_fname );
+	if( flagger & OUT_FLAG ) XB::write( out_fname, book );
 	else XB::write( stdout, book );
 	
 	if( flagger & VERBOSE ) puts( "Done. Goodbye." );

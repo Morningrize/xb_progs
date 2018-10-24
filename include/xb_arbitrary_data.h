@@ -143,7 +143,8 @@ namespace XB{
 			
 			//Indexer accessing and operations
 			std::vector< adata_field > lsfields() const { return _fields->names; };
-			adata_indexer *get_indexer() { return _fields; };
+			adata_indexer &get_indexer() { return *_fields; };
+            adata_indexer get_indexer() const { return *_fields; };
 			int nf() const { return _fields->names.size(); }; //count them
 			int fsize( const char *name ) const; //get the size of one
 			
