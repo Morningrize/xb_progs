@@ -446,9 +446,9 @@ namespace XB{
 	//----------------------------------------------------------------------------
 	//push and SUBSCRIBE an arbitrary data
     void adata_uniarr::push_back( const adata &given ){
-        if( _ua.size() == 0 ) set_indexer( given.get_indexer() );
+        if( _ua.empty() ) set_indexer( given.get_indexer() );
 		_ua.push_back( given );
-		back().subscribe_uniarr( this );
+		_ua.back().subscribe_uniarr( this );
 	}
 	
 	//----------------------------------------------------------------------------

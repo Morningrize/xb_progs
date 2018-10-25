@@ -53,9 +53,9 @@ namespace XB{
 	void write( char* f_name, std::vector<XB::data> &xb_book, int header=1 );
 	
 	//this block of functions work with XB::adata kind of data
-	void write( FILE* f_out, XB::adata_uniarr &xb_book, int header=1 );
-	void write( std::string f_name, XB::adata_uniarr &xb_book, int header=1 );
-	void write( char* f_name, XB::adata_uniarr &xb_book, int header=1 );
+	void write( FILE* f_out, std::vector<XB::adata> &xb_book, int header=1 );
+	void write( std::string f_name, std::vector<XB::adata> &xb_book, int header=1 );
+	void write( char* f_name, std::vector<XB::adata> &xb_book, int header=1 );
 
 	//this block of functions work with XB::data kind of data
 	void write( FILE* f_out, std::vector<XB::track_info> &xb_book, int header=1 );
@@ -78,9 +78,9 @@ namespace XB{
 	void load( char* f_name, std::vector<XB::data> &xb_bookm, long unsigned cnt=-1 );
 	
 	//this block of functions work with XB::adata kind of data
-	void load( FILE* f_in, XB::adata_uniarr &xb_book, long unsigned cnt=-1 );
-	void load( std::string f_name, XB::adata_uniarr &xb_book, long unsigned cnt=-1 );
-	void load( char* f_name, XB::adata_uniarr &xb_bookm, long unsigned cnt=-1 );
+	void load( FILE* f_in, std::vector<XB::adata> &xb_book, long unsigned cnt=-1 );
+	void load( std::string f_name, std::vector<XB::adata> &xb_book, long unsigned cnt=-1 );
+	void load( char* f_name, std::vector<XB::adata> &xb_bookm, long unsigned cnt=-1 );
 
 	//this block of functions work with XB::data kind of data
 	void load( FILE* f_in, std::vector<XB::track_info> &xb_book, long unsigned cnt=-1 );

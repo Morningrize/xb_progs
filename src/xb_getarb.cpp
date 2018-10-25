@@ -92,7 +92,7 @@ int main( int argc, char **argv ){
 	
 	//load all the files
 	if( flagger & VERBOSE ) puts( "Loading files..." );
-	XB::adata_uniarr book, buf;
+	std::vector<XB::adata> book, buf;
 	for( int f=0; f < in_fcount; ++f ){
 		try{
 			if( flagger & VERBOSE ) printf( "\tLoading %s...\n", in_fname[f] );

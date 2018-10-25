@@ -67,7 +67,7 @@ DEFUN_DLD( xb_write_adata, args, , O_DOC_STRING ){
 		return octave_value_list();
 	}*/
 	
-	XB::adata_uniarr data;
+	std::vector<XB::adata> data;
 	
 	//if we got here, we should be able to proceed.
 	//declare the necessary bits and pieces

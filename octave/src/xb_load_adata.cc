@@ -62,7 +62,7 @@ DEFUN_DLD( xb_load_adata, args, nargout, O_DOC_STRING ){
 	}
 	
 	//loop-load the files
-	XB::adata_uniarr data, data_buf;
+	std::vector<XB::adata> data, data_buf;
 	char in_fname[256];
 	bool compression_flag = true;
 	for( int f=0; f < nargin; ++f ){

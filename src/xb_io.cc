@@ -249,7 +249,7 @@ void XB::load( std::string f_name, std::vector<XB::data> &xb_book, long unsigned
 
 //-------------------------------------------------------------------------------
 //Writer for the arbitrary data structure
-void XB::write( FILE *f_out, XB::adata_uniarr &xb_book, int header ){
+void XB::write( FILE *f_out, std::vector<XB::adata> &xb_book, int header ){
 	if( header ){
 		XB::io_header *hdr = alloc_header( 1, XB_FILE_DESCRIPTOR_ADATA );
 		XB::write_header( f_out, *hdr );
@@ -257,24 +257,22 @@ void XB::write( FILE *f_out, XB::adata_uniarr &xb_book, int header ){
 	}
 	
 	void *buf;
-	int fb_size = 0, current_sz = 0;
+	int fb_size = 0;
 	for( int i=0; i < xb_book.size(); ++i ){
 		fb_size = XB::adata_getlbuf( &buf, xb_book[i] );
-		if( fb_size > current_sz ){
-            buf = realloc( buf, fb_size + sizeof(int) );
-            current_sz = fb_size;
-        }
-		memmove( (int*)buf+1, buf, fb_size );
+        buf = realloc( buf, fb_size + sizeof(int) );
+
+        memmove( (int*)buf+1, buf, fb_size );
 		*(int*)buf = fb_size;
 		fb_size += sizeof(int);
 		
 		fwrite( buf, fb_size, 1, f_out );
+        free( buf );
 	}
-    free( buf );
 }
 
 //char* interface
-void XB::write( char* f_name, XB::adata_uniarr &xb_book, int header ){
+void XB::write( char* f_name, std::vector<XB::adata> &xb_book, int header ){
 	//build the command for the pipe
 	char command[310];
 	strcpy( command, "pbzip2 -c > " );
@@ -292,13 +290,13 @@ void XB::write( char* f_name, XB::adata_uniarr &xb_book, int header ){
 }
 
 //std::string interface
-void XB::write( std::string f_name, XB::adata_uniarr &xb_book, int header ){
+void XB::write( std::string f_name, std::vector<XB::adata> &xb_book, int header ){
 	XB::write( f_name.c_str(), xb_book, header );
 }
 
 //-------------------------------------------------------------------------------
 //writer interface for the arbitrary data
-void XB::load( FILE *f_in, XB::adata_uniarr &xb_book,long unsigned cnt ){
+void XB::load( FILE *f_in, std::vector<XB::adata> &xb_book,long unsigned cnt ){
 	//check if the vector is empty. If it's not, raise an exception.
 	if( !xb_book.empty() ) throw XB::error( "Vector not empty!", "XB::load" );
 
@@ -332,7 +330,7 @@ void XB::load( FILE *f_in, XB::adata_uniarr &xb_book,long unsigned cnt ){
 }
 
 //char* interface for the loader
-void XB::load( char* f_name, XB::adata_uniarr &xb_book, long unsigned cnt ){
+void XB::load( char* f_name, std::vector<XB::adata> &xb_book, long unsigned cnt ){
 	//build the command for the pipe
 	char command[310];
 	
@@ -358,7 +356,7 @@ void XB::load( char* f_name, XB::adata_uniarr &xb_book, long unsigned cnt ){
 }
 
 //std::string interface for the loader.
-void XB::load( std::string f_name, XB::adata_uniarr &xb_book, long unsigned cnt ){
+void XB::load( std::string f_name, std::vector<XB::adata> &xb_book, long unsigned cnt ){
 	XB::load( f_name.c_str(), xb_book, cnt );
 }
 

@@ -234,7 +234,7 @@ void XB::reader( std::vector<XB::track_info> &xb_book, std::string f_name ){
 }
 
 //------------------------------------------------------------------------------------
-void XB::arb_reader( XB::adata_uniarr &xb_book,
+void XB::arb_reader( std::vector<XB::adata> &xb_book,
                      const char *f_name, const XB::adata_field *fields ){
 	//first thing first, check that the datatypes are allright
 	if( !(sizeof(unsigned int) == sizeof(UInt_t)) ||
@@ -273,7 +273,7 @@ void XB::arb_reader( XB::adata_uniarr &xb_book,
 	//dynamic branch retrival
 	int nf = 0; while( fields[nf].size ) ++nf;
 	TBranch **branches = (TBranch**)calloc( nf, sizeof(TBranch**) );
-    XB::adata element( fields, nf );
+    XB::adata element;
 	for( int i=( strcmp( fields[0].name, "__scalar" )? 0 : 1 ); i < nf; ++i ){
 		branches[i] = data_tree->GetBranch( fields[i].name );
 		if( !branches[i] ) throw XB::error( "No field!", "XB::arb_reader" );
@@ -312,8 +312,9 @@ void XB::arb_reader( XB::adata_uniarr &xb_book,
 			branches[f]->GetEntry( i );
 			element.dofield( fields[f].name, field_sz, field_bf );
 		}
-		
+
 		xb_book.push_back( element );
+        element.clear();
 	}		
 	free( field_bf );
 	
@@ -321,7 +322,7 @@ void XB::arb_reader( XB::adata_uniarr &xb_book,
 }
 
 //std::string interface...
-void XB::arb_reader( XB::adata_uniarr &xb_book,
+void XB::arb_reader( std::vector<XB::adata> &xb_book,
                      std::string f_name, const XB::adata_field *fields ){
 	XB::arb_reader( xb_book, f_name.c_str(), fields );
 }
