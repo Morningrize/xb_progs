@@ -39,15 +39,15 @@ function [klz, nb_removed] = xb_cluster_cut_on_nrg( klz, op_handle )
 		catch
 			%I'm not yet sure this is the most brilliant solution
 			%but it's the best I can think right now.
-			[klz_rest nbr_rest] = xb_cluster_cut_on_field( klz(idx_part(ii):end), ...
-			                                               op_handle );
+			[klz_rest nbr_rest] = xb_cluster_cut_on_nrg( klz(idx_part(ii):end), ...
+			                                             op_handle );
 			break;
 		end
 		nb_proc += 1;
 	end
 
 	%do the parallel execution
-	proc_handle = @( p ) _processor( p, op_handle, field_name );
+	proc_handle = @( p ) _processor( p, op_handle );
 	try
 		pkg load parallel;
 		[klz_part, nb_removed_part] = parcellfun( nb_proc, proc_handle, ...
@@ -59,14 +59,13 @@ function [klz, nb_removed] = xb_cluster_cut_on_nrg( klz, op_handle )
 		nb_removed_part = sum( cell2mat( nb_removed_part ) );
 	end
 	
-	
 	%stitch together the stuff
 	klz = reshape( klz_part, 1, [] );
 	if ~isempty( klz_rest ) klz = [klz(:); klz_rest(:)]; end
 	nb_removed = sum( nb_removed_part ) + nbr_rest;	
 
-	%remove empty events.
-	evt = evt( find( [evt.n] ) );
+    %remove empty events.
+	klz = klz( find( [klz.n] ) );
 end
 
 %the processor function

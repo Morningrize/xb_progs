@@ -34,6 +34,7 @@ NOTE: what's taken from standard input is always first
 #define HAVE_ADATA 0x0020
 #define HAVE_TRACK 0x0040
 #define HAVE_KLZ 0x0080
+#define DO_UNMATCH 0x1000
 
 //------------------------------------------------------------------------------------
 //a simple enum to keep track of the types
@@ -74,13 +75,14 @@ int main( int argc, char **argv ){
 		{ "verbose", no_argument, &flagger, flagger | VERBOSE },
 		{ "put-on-stdout", no_argument, &flagger, flagger | STDOUT_FLAG },
 		{ "get-from-stidn", no_argument, &flagger, flagger | STDIN_FLAG },
+        { "unmatch", no_argument, &flagger, flagger | DO_UNMATCH },
 		{ "type", required_argument, NULL, 't' },
 		{ "put-to", required_argument, NULL, 'o' },
 		{ NULL, 0, NULL, 0 }
 	};
 	
 	type_type tt = XB_DATA; //if no type is specified, assume data.
-	while( (iota = getopt_long( argc, argv, "vct:o:p", opts, &idx )) != -1 ){
+	while( (iota = getopt_long( argc, argv, "vct:o:pu", opts, &idx )) != -1 ){
 		switch( iota ){
 			case 'v' :
 				flagger |= VERBOSE;
@@ -102,6 +104,9 @@ int main( int argc, char **argv ){
 				strncpy( out_fnames[out_fcount], optarg, 256 );
 				++out_fcount;
 				break;
+            case 'u' :
+                flagger |= DO_UNMATCH;
+                break;
 			default : exit( 1 );
 		}
 	}
@@ -266,11 +271,15 @@ void compare( std::vector<T_one> &one, std::vector<T_two> &two ){
 		printf( "\tEvents --one: %10d", 0 );
 	}
 	int sz = one.size();
+    bool rc = false;
 	for( int i=0; i < sz; ++i ){
 		if( flagger & VERBOSE ) printf( "\b\b\b\b\b\b\b\b\b\b%10d", i );
 		//if the event is not found, mark it for deletion (set id to 0)
-		if( !std::binary_search( two_begin, two_end, one.at(i), event_id_comparison ) )
-			 one.at(i).evnt = 0;
+        rc = std::binary_search( two_begin, two_end, one.at(i), event_id_comparison );
+		if( !( rc || flagger & DO_UNMATCH ) )
+            one.at(i).evnt = 0;
+        else if( rc && flagger & DO_UNMATCH )
+            one.at(i).evnt = 0;
 	}
 	if( flagger & VERBOSE ) puts( " half way..." );
 	
@@ -287,6 +296,9 @@ void compare( std::vector<T_one> &one, std::vector<T_two> &two ){
 	
 	if( flagger & VERBOSE ){
 		printf( "\tsize of one: %d, sizeo of two: %d\n", one.size(), two.size() );
+    }
+    if( flagger & DO_UNMATCH ) return;
+    if( flagger & VERBOSE ){
 		printf( "\tEvents --two: %10d", 0 );
 	}
 	sz = two.size();
