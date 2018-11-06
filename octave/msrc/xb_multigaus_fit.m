@@ -1,11 +1,11 @@
 %this function fit a dataset with some gaussians, specified by passing their
 %initial guess values.
 %
-% [[A, x_0, sigma, ... ], J_val] = xb_multigaus_fit( data_set, [A, x_0, sigma, ...]
+% [[A, x_0, sigma, ... ], J_val, errors] = xb_multigaus_fit( data_set, [A, x_0, sigma, ...]
 % data_set -- is supposed to be a two row matrix, the first row representing
 %             the abscissa, the second the ordinate
 
-function [parameters, J_val] = xb_multigaus_fit( data_set, parameters, varargin )
+function [parameters, J_val, errors] = xb_multigaus_fit( data_set, parameters, varargin )
 	%check that the number of parametes makes sense
 	if numel( parameters ) == 0 || mod( numel( parameters ), 3 ) != 0
 		error( 'Number of parameters is not consistent.' );
@@ -30,11 +30,14 @@ function [parameters, J_val] = xb_multigaus_fit( data_set, parameters, varargin 
 	%make the cost function
 	J_fun = @( p ) sum( ( xb_multigaus_stack_exec( p, gaus_stack ) ...
 	                      + exp_bkg( p ) - data_set(2,:) ).^2 );
-
+    
 	%do the minimization
+	opts = optimset( 'ToLX', 1e-11, 'ToLFun', 1e-11, 'MaxIter', 1e9 );
 	for ii=1:30
-		[parameters, J_val] = fminsearch( J_fun, parameters );
+		[parameters, J_val] = fminsearch( J_fun, parameters, opts );
 	end
 
-	%TODO: do an estimate on the errors on the parameters.
+	%NOTE: this is still experimental and might very well be BS
+    J_cov = xb_covariance( J_fun, parameters );
+    errors = sqrt( abs( diag( J_cov ) ) );
 end
