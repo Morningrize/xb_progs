@@ -12,7 +12,7 @@ function [data, shift_aonz] = rrr_corr_inaonz( data, peesaonz_fit, pivots, targe
     for ii=1:size( peesaonz_fit, 2 )
         blobs = peesaonz_fit{ii};
         blobs = blobs(2:3:end);
-        [shift_aonz(ii), i_tin] = min( blobs - 2.64 );
+        [shift_aonz(ii), i_tin] = min( abs( blobs - target ) );
     end
     
     coeff = xb_OLS( pivots, shift_aonz, 2 );
@@ -20,7 +20,7 @@ function [data, shift_aonz] = rrr_corr_inaonz( data, peesaonz_fit, pivots, targe
     
     inaonz_shift = shifun( [1:length(data)] );
     for ii=1:length( data )
-        data(ii).in_A_on_Z -= inaonz_shift(ii);
+        data(ii).in_A_on_Z += inaonz_shift(ii);
     end
     
 end

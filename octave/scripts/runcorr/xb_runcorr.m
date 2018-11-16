@@ -36,7 +36,7 @@ function [data_corrected, shift_Z, shift_AonZ, ...
         idx_min = max( pp - corrector_halfwidth, 1 );
         idx_max = min( pp + corrector_halfwidth, d_length );
         
-        [hinz, binz] = hist( inz(idx_min:idx_max), 100 );
+        [hinz, binz] = hist( inz(idx_min:idx_max), [min(inz):0.05:max(inz)] );
         [inz_m, inz_im] = xb_multigaus_find( hinz, 'triglevel', max( hinz )/10 );
         pees_init = zeros( 3*numel( inz_m ), 1 );
         pees_init(1:3:end) = inz_m;
@@ -49,6 +49,7 @@ function [data_corrected, shift_Z, shift_AonZ, ...
     end
 
     [data, shift_Z] = rrr_corr_inz( data, peesZ_fit, pivots );
+    target_inaonz = 132/50;
     inz = double( [data.in_Z] );
 
     peesAonZ_fit = {};
@@ -59,7 +60,8 @@ function [data_corrected, shift_Z, shift_AonZ, ...
         idx_max = min( pp + corrector_halfwidth, d_length );
         selection = find( inz(idx_min:idx_max) <= 50 );
     
-        [hinaonz, binaonz] = hist( inaonz(selection), 300 );
+        [hinaonz, binaonz] = hist( inaonz(find( inz < zcut )), ...
+                                   [min(inaonz):0.001:max(inaonz)] );
         [inaonz_m, inaonz_im] = xb_multigaus_find( hinaonz, 'triglevel', ...
                                                 max( hinaonz )/10 );
         pees_init = zeros( 3*numel( inaonz_m ), 1 );
@@ -72,5 +74,6 @@ function [data_corrected, shift_Z, shift_AonZ, ...
         errAonZ_fit(end+1) = pe;
     end
     
-    [data_corrected, shift_AonZ] = rrr_corr_inaonz( data, peesAonZ_fit, pivots );
+    [data_corrected, shift_AonZ] = rrr_corr_inaonz( data, peesAonZ_fit, ...
+                                                    pivots, target_inaonz );
 end
