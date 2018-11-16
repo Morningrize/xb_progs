@@ -33,7 +33,6 @@ function [ell, data_cut] = xb_find_isoID( some_ellispes, eleA, eleZ, data )
     [m, im] = min( dist );
     
     ell = some_ellispes(im);
-    keyboard
     if nargout == 1
         return;
     end
