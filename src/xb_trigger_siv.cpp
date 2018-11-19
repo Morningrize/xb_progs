@@ -154,8 +154,8 @@ int main( int argc, char **argv ){
 	                                sz_bf, ( flagger & TRACK )? track.size() : data.size(),
 	                                nb_removed );
 	
-	if( strstr( "/dev/null", out_fname ) ) goto __END__;
 	if( flagger & OUT_FLAG ){
+        if( strstr( "/dev/null", out_fname ) ) goto __END__;
 		if( flagger & TRACK ) XB::write( out_fname, track );
 		else XB::write( out_fname, data );
 	} else {

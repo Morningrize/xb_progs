@@ -77,15 +77,15 @@ function [evt, nb_removed] = _processor( evt, op_handle, field_name )
 	nb_removed = sum( [evt.n] );
 	for ii=1:length( evt )
 		keep_idx = find( op_handle( [evt(ii).( field_name )](:) ) );
-		if size( evt(ii).i ) evt(ii).i = evt(ii).i( keep_idx ); end
-		if size( evt(ii).e ) evt(ii).e = evt(ii).e( keep_idx ); end
-		if size( evt(ii).he ) evt(ii).he = evt(ii).he( keep_idx ); end
-		if size( evt(ii).t ) evt(ii).t = evt(ii).t( keep_idx ); end
-		if size( evt(ii).pt ) evt(ii).pt = evt(ii).pt( keep_idx ); end
+		if isfield( evt, 'i' ) && size( evt(ii).i ) evt(ii).i = evt(ii).i( keep_idx ); end
+		if isfield( evt, 'e' ) && ssize( evt(ii).e ) evt(ii).e = evt(ii).e( keep_idx ); end
+		if isfield( evt, 'he' ) && ssize( evt(ii).he ) evt(ii).he = evt(ii).he( keep_idx ); end
+		if isfield( evt, 't' ) && ssize( evt(ii).t ) evt(ii).t = evt(ii).t( keep_idx ); end
+		if isfield( evt, 'pt' ) && ssize( evt(ii).pt ) evt(ii).pt = evt(ii).pt( keep_idx ); end
 
 		%at the end of things, multiplicity update
 		evt(ii).n = length( keep_idx );
-		evt(ii).sum_e = sum( [evt(ii).e] );
+		if isfield( evt, 'sum_e' ) evt(ii).sum_e = sum( [evt(ii).e] ); end
 	end
 
 	nb_removed = nb_removed - sum( [evt.n] );

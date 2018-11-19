@@ -284,12 +284,10 @@ void XB::arb_reader( std::vector<XB::adata> &xb_book,
 	unsigned int numel=0;
 	void *field_bf = malloc( 1 );
 	for( int i=0; i < nb_entries; ++i ){
-		//at least, let's check it's not empty
 		if( !branches[0] ) numel = 1;
 		else{
 			branches[0]->SetAddress( &numel );
 			branches[0]->GetEntry( i );
-			if( !numel ) continue;
 		}
 
 		//addressing
