@@ -1,13 +1,19 @@
 %this function looks for candidate maxima (for a gaussian fit, but
 %its application isn't restricted to that.
 %
-%maxima = xb_multigaus_find( data_abscissa )
+% [maxima, m_idx] = xb_multigaus_find( data_ordinate, ... )
 %    maxima -- an array of values, the candidate maxima
 %    m_idx -- indexes thereof
-%    data_abscissa -- the data to be searched
+%    data_ordinate -- the data to be searched (typically, the spectrum)
+% options:
+%    triglevel -- the threshold from which consider valid the maxima
+%    sgolaylength -- the length of the filter
+%    sgolayorder -- the order of the filter
+%    smoothpasses -- smooth the data before processing this many times
+%    
 %TODO: proper documentation
 
-function [maxima, m_idx] = xb_multigaus_find( data_abscissa, varargin )
+function [maxima, m_idx] = xb_multigaus_find( data_ordinate, varargin )
 	
 	%begin with a check on the packages
 	try
@@ -18,7 +24,7 @@ function [maxima, m_idx] = xb_multigaus_find( data_abscissa, varargin )
 	end
 	
 	%input parsing
-	trg = min( data_abscissa ); %trigger level
+	trg = min( data_ordinate ); %trigger level
 	sg_len = 3; %default sgolay length
 	sg_smt = 5; %smoother settings
 	sg_ord = 2; %filter order
@@ -54,16 +60,16 @@ function [maxima, m_idx] = xb_multigaus_find( data_abscissa, varargin )
 	smoother = sgolay( sg_ord, 5*sg_len ); %a smoother
 
 	%apply the derivatives (and do smoothing)
-	d_data = sgolayfilt( data_abscissa, first_d );
+	d_data = sgolayfilt( data_ordinate, first_d );
 	for ii=1:sg_smt d_data = sgolayfilt( d_data, smoother ); end %smoother
-	dd_data = sgolayfilt( data_abscissa, second_d );
+	dd_data = sgolayfilt( data_ordinate, second_d );
 	for ii=1:sg_smt dd_data = sgolayfilt( dd_data, smoother ); end %smoother
 	
 	%find the zeroes -- which means find when the sign changes
 	sgn_changes = find( sign( d_data(2:end) ) ~= sign( d_data(1:end-1) ) );
 	sgn_changes += 1; %seems to be needed.
 	%check if i'm seeing double
-	adj_stp = max( length( data_abscissa )/1e3, 1 );
+	adj_stp = max( length( data_ordinate )/1e3, 1 );
 	adj = find( sgn_changes(2:end) - sgn_changes(1:end-1) <= adj_stp );
 	if numel( adj ) >= 1 %then we have adjacent hits
 		sgn_changes(adj) = sgn_changes(adj.+1);
@@ -74,7 +80,7 @@ function [maxima, m_idx] = xb_multigaus_find( data_abscissa, varargin )
 	%derivative
 	m_idx = find( dd_data( sgn_changes ) <= 0 );
 	m_idx = sgn_changes( m_idx );
-	maxima = data_abscissa( m_idx );
+	maxima = data_ordinate( m_idx );
 
 	%now, apply the trigger
 	t_idx = find( maxima >= trg );

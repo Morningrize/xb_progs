@@ -260,13 +260,14 @@ void XB::write( FILE *f_out, std::vector<XB::adata> &xb_book, int header ){
 	int fb_size = 0;
 	for( int i=0; i < xb_book.size(); ++i ){
 		fb_size = XB::adata_getlbuf( &buf, xb_book[i] );
-		buf = realloc( buf, fb_size + sizeof(int) );
-		memmove( (int*)buf+1, buf, fb_size );
+        buf = realloc( buf, fb_size + sizeof(int) );
+
+        memmove( (int*)buf+1, buf, fb_size );
 		*(int*)buf = fb_size;
 		fb_size += sizeof(int);
 		
 		fwrite( buf, fb_size, 1, f_out );
-		free( buf );
+        free( buf );
 	}
 }
 
@@ -304,7 +305,7 @@ void XB::load( FILE *f_in, std::vector<XB::adata> &xb_book,long unsigned cnt ){
 	XB::load_header( f_in, hdr );
 	if( !strstr( &hdr.d, "ADATA" ) ) throw XB::error( "Wrong data file!", "XB::load" );
 	
-	int fb_size;
+	int fb_size=0, current_sz=0;
 	void *buf = NULL;
 	long unsigned count=0;
 	XB::adata data;
@@ -313,15 +314,19 @@ void XB::load( FILE *f_in, std::vector<XB::adata> &xb_book,long unsigned cnt ){
 		if( fread( &fb_size, sizeof(int), 1, f_in ) != 1 ) break;
 		
 		//and get the full linear buffer
-		buf = malloc( fb_size );
+		if( fb_size > current_sz ){
+            buf = realloc( buf, fb_size );
+            current_sz = fb_size;
+        }
 		if( !buf ) throw( "Memory error!", "XB::load" );
 		fread( buf, fb_size, 1, f_in );
 		
 		XB::adata_fromlbuf( data, buf );
 		xb_book.push_back( data );
 		
-		free( buf ); buf = NULL;
+        ++count;
 	}
+    free( buf ); buf = NULL;
 }
 
 //char* interface for the loader

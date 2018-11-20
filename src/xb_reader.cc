@@ -273,6 +273,7 @@ void XB::arb_reader( std::vector<XB::adata> &xb_book,
 	//dynamic branch retrival
 	int nf = 0; while( fields[nf].size ) ++nf;
 	TBranch **branches = (TBranch**)calloc( nf, sizeof(TBranch**) );
+    XB::adata element;
 	for( int i=( strcmp( fields[0].name, "__scalar" )? 0 : 1 ); i < nf; ++i ){
 		branches[i] = data_tree->GetBranch( fields[i].name );
 		if( !branches[i] ) throw XB::error( "No field!", "XB::arb_reader" );
@@ -283,36 +284,35 @@ void XB::arb_reader( std::vector<XB::adata> &xb_book,
 	unsigned int numel=0;
 	void *field_bf = malloc( 1 );
 	for( int i=0; i < nb_entries; ++i ){
-		//at least, let's check it's not empty
 		if( !branches[0] ) numel = 1;
 		else{
 			branches[0]->SetAddress( &numel );
 			branches[0]->GetEntry( i );
-			if( !numel ) continue;
 		}
-	
-		xb_book.push_back( XB::adata() );
-		
+
 		//addressing
-		evnt->SetAddress( (Int_t*)&xb_book.back().evnt );
-		tpat->SetAddress( (Int_t*)&xb_book.back().tpat );
-		if( inz ) inz->SetAddress( (Float_t*)&xb_book.back().in_Z );
-		if( inaonz ) inaonz->SetAddress( (Float_t*)&xb_book.back().in_A_on_Z );
+		evnt->SetAddress( (Int_t*)&element.evnt );
+		tpat->SetAddress( (Int_t*)&element.tpat );
+		if( inz ) inz->SetAddress( (Float_t*)&element.in_Z );
+		if( inaonz ) inaonz->SetAddress( (Float_t*)&element.in_A_on_Z );
 
 		//copying
 		evnt->GetEntry( i );
 		tpat->GetEntry( i );
 		if( inz ) inz->GetEntry( i );
 		if( inaonz ) inaonz->GetEntry( i );
-		xb_book.back().n = numel;
+		element.n = numel;
 		
 		for( int f=1; f < nf; ++f ){
 			field_sz = fields[f].size*numel;
 			field_bf = realloc( field_bf, field_sz );
 			branches[f]->SetAddress( (Float_t*)field_bf );
 			branches[f]->GetEntry( i );
-			xb_book.back().dofield( fields[f].name, field_sz, field_bf );
+			element.dofield( fields[f].name, field_sz, field_bf );
 		}
+
+		xb_book.push_back( element );
+        element.clear();
 	}		
 	free( field_bf );
 	
@@ -323,7 +323,8 @@ void XB::arb_reader( std::vector<XB::adata> &xb_book,
 void XB::arb_reader( std::vector<XB::adata> &xb_book,
                      std::string f_name, const XB::adata_field *fields ){
 	XB::arb_reader( xb_book, f_name.c_str(), fields );
-}			
+}
+    
 
 //------------------------------------------------------------------------------------
 //the simulation reader implementation

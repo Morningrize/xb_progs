@@ -6,6 +6,8 @@
 
 namespace XB{
 
+    xb_ball globber_ball;
+    
 	//-------------------------------------------------------------------
 	//ordered energy deposit list operators
 	//basically, what they do is restrict the comparison to the energy
@@ -102,7 +104,7 @@ namespace XB{
 		oed* list = make_energy_list( evnt ); //produce the list
 		
 		//make a crystal ball
-		xb_ball cb;
+		xb_ball &cb = globber_ball;
 		
 		//init the cluster
 		cluster kl; //initiate the cluster
@@ -155,7 +157,7 @@ namespace XB{
 	cluster make_one_cluster_bead( const data &evnt, unsigned int order ){
 		oed *list = make_energy_list( evnt ), *listend = list + evnt.n; //an ordered energy list
 		unsigned int lile = evnt.n; //length of the list
-		xb_ball cb; //the crystal ball
+		xb_ball &cb = globber_ball; //the crystal ball
 		
 		//init the cluster
 		cluster kl; //initiate the cluster

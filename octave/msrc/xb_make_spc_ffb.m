@@ -26,7 +26,7 @@ function [hst_ffb, binz_ffb, herr_ffb] = xb_make_spc_ffb( dataset, bin, varargin
 	herr_ffb = cell( 3, 1 );
 	nrg = cell( 3, 1 );
 	icbf = [xb_ball_neigh( 81, 5 ).i];
-	icbb = [xb_ball_neigh( 82, 5 ).i];
+	[~, icbb] = setdiff( [xb_ball_at( [1:162] ).i], icbf );
 	ohf = @(p) xb_op_cbi( p, icbf );
 	ohb = @(p) xb_op_cbi( p, icbb );
 	

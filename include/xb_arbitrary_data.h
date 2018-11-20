@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
+#include <stdio.h>
+#include <algorithm>
 
 #include "xb_error.h"
 #include "xb_data.h"
@@ -16,6 +18,8 @@
 #define XB_ADATA_NB_FIELDS 256 //maximum number of fields supported
                                //NOTE: keep it small, but that means
                                //      hash collisions will be a problem
+#define XB_ADATA_FIELD_NAME_LENGTH 16
+
 //the hash table
 //NOTE: apparently, there's a way to generate one that won't produce collisions
 //      on a given set of words. This is NOT it yet, it's just a random one.
@@ -25,30 +29,78 @@
 //a define to get the header size of the linear buffer
 #define nf2hdr_size( nf ) sizeof(event_holder) + ((nf)+2)*sizeof(int) + (nf)*sizeof(adata_field)
 
+/*TODO LIST:
+0)   adapt for pointer ofssets instead of pointers [x]
+1)   adapt for pointed indexer                     [x]
+1.5) implement convenience into indexer            [x]
+2)   implement un- and subscribe methods of adata  [x]
+3)   implement adata_uniarr                        [x]
+4)   implement the merge function                  [x]
+*/
+
 namespace XB{
     //----------------------------------------------------------------------------
     //an ugly constant to hold the hash table
     const unsigned char adata_pT[256] = XB_PAERSON_HASH_TABLE;
     
 	//----------------------------------------------------------------------------
+	//declare the uniform array
+	class _xb_arbitrary_data_uniform_array;
+	
+	//----------------------------------------------------------------------------
 	//a data structure representing the field,
 	typedef struct _xb_arb_data_field {
-		char name[16];
+		char name[XB_ADATA_FIELD_NAME_LENGTH];
 		short size;
 	} adata_field;
+    
+    //a data structure to do indexing (also the offset table can be shared!)
+    //NOTE: now an offset of -1 means empty!
+    typedef class _xb_arb_data_indexer {
+        public:
+            _xb_arb_data_indexer(): names( 0 ) {
+                for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) diffs[i] = -1; };
+            _xb_arb_data_indexer( const unsigned n ): names( n ) {
+                for( int i=0; i < XB_ADATA_NB_FIELDS; ++i ) diffs[i] = -1; };
+            _xb_arb_data_indexer( const _xb_arb_data_indexer &given ): names( given.names ) {
+                memcpy( diffs, given.diffs, XB_ADATA_NB_FIELDS*sizeof(int) ); };
+            _xb_arb_data_indexer &operator=( const _xb_arb_data_indexer &right ){
+                names = right.names;
+                memcpy( diffs, right.diffs, XB_ADATA_NB_FIELDS*sizeof(int) );
+                return *this;
+            };
+            //NOTE on comparison: to KISS, a difference in the ordering of the
+            //     fields is flagged as a difference in the indexers
+            //     this also means that the concatenation order _matters_
+            bool operator!=( const _xb_arb_data_indexer &right );
+            bool operator==( const _xb_arb_data_indexer &right ){ return !( *this != right ); };
+            _xb_arb_data_indexer &operator+( const _xb_arb_data_indexer &right );
+            
+            unsigned size() const { return names.size(); };
+            adata_field &operator[]( unsigned i ){ return names[i]; };
+            adata_field &at( unsigned i ){ return names.at(i); };
+            std::vector< adata_field > names;
+            int diffs[XB_ADATA_NB_FIELDS];
+    } adata_indexer;
 
 	//----------------------------------------------------------------------------
 	//the main thing, the class
 	typedef class _xb_arbitrary_data : public event_holder {
 		public:
+			friend class _xb_arbitrary_data_uniform_array;
+			
 			//ctors, dtor
 			_xb_arbitrary_data();
 			_xb_arbitrary_data( const adata_field *fld_array, size_t n_fld );
+			_xb_arbitrary_data( adata_indexer *indexer );
+			_xb_arbitrary_data( const adata_indexer &indexer );
 			_xb_arbitrary_data( const _xb_arbitrary_data &given );
 			~_xb_arbitrary_data();
 			
 			//important operators
 			_xb_arbitrary_data &operator=( const _xb_arbitrary_data &right );
+			_xb_arbitrary_data copy() const; //returns a copy of this
+			                                  //but with its own indexer & no ua.
 			//get data from field, by name.
 			//use fsize( char *name ) to ge the returned buffer size
 			void *operator()( const char *name ) const;
@@ -68,8 +120,10 @@ namespace XB{
 			//you can use this themplate mehtod, too
 			template< class T >
 			T tip( const char *name ) const {
-				void *head = _fld_ptr[phash8( name )];
-				if( !head ) throw error( "Not a field!", "XB::adata::getfield" );
+                		unsigned char i_fld = phash8( name );
+				void *head = (char*)_buf + _fields->diffs[i_fld];
+				if( head < _buf || _fields->diffs[i_fld] >= _buf_sz )
+					return NULL;
 				head = (int*)head + 1;
 				return *(T*)head;
 			};
@@ -80,23 +134,28 @@ namespace XB{
 			//you'll just loop in the array
 			template< class T >
 			inline T &at( const char *name, int i ){ //note that this is NOT const
-				void *head = _fld_ptr[phash8( name )];
+				void *head = (char*)_buf + _fields->diffs[phash8( name )];
+				if( head < _buf ) throw error( "Not a field!", "XB::adata::getfield" );
 				int len = *(int*)head;
-				if( !head ) throw error( "Not a field!", "XB::adata::getfield" );
 				head = (int*)head + 1;
 				return ((T*)head)[i%len];
 			}
-			//list the fields
-			std::vector< adata_field > lsfields() const { return _fields; };
-			int nf() const { return _fields.size(); }; //count them
+			
+			//Indexer accessing and operations
+			std::vector< adata_field > lsfields() const { return _fields->names; };
+			adata_indexer &get_indexer() { return *_fields; };
+            adata_indexer get_indexer() const { return *_fields; };
+			int nf() const { return _fields->names.size(); }; //count them
 			int fsize( const char *name ) const; //get the size of one
 			
 			//a couple of friends, for I/O ops
 			friend int adata_getlbuf( void **linbuf, const _xb_arbitrary_data &given );
-			friend int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf );
-			//TODO: and one for merge
-			/*friend _xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
-			                                       const _xb_arbitrary_data &two );*/
+			friend int adata_fromlbuf( _xb_arbitrary_data &here,
+			                           const void *buf,
+			                           adata_indexer *indexer );
+			friend _xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
+			                                       const _xb_arbitrary_data &two );
+			friend void adata_put( FILE *stream, const _xb_arbitrary_data &given );
 		private:
 			//the data buffer
 			//data is stored [int size|data]
@@ -104,18 +163,70 @@ namespace XB{
 			//can contain any type.
 			int _buf_sz;
 			void *_buf;
-			//TODO: it turns out that this is gigantic
-			//      it might be worth it to change it to short deltas
-			void *_fld_ptr[XB_ADATA_NB_FIELDS]; //support 256 fields (more than enough)
-			std::vector< adata_field > _fields; //keep track of the fields.
+            adata_indexer *_fields; //it's the indexer!
+            char _is_fields_owned;
+			_xb_arbitrary_data_uniform_array *_parent_array;
 			
 			//an utility to has a field name
 			//pearson's has, 8 bits.
-			unsigned char phash8( const char *name ) const;
+			static unsigned char phash8( const char *name );
 			
-			//an utility to realloc the buffer, safely
-			void safe_buf_realloc( size_t size );
+			//un- and subscription to an uniform array
+			void subscribe_uniarr( _xb_arbitrary_data_uniform_array *ua );
+			void unsubscribe_uniarr();
 	} adata;
+
+	//----------------------------------------------------------------------------
+    //an array of UNIFORM adata entries --this should be the way to use this
+    //struct since the indexer has been rendered external
+    typedef std::vector< adata > _ua_type;
+	typedef _ua_type::iterator _ua_iter;
+    typedef class _xb_arbitrary_data_uniform_array {
+		public:
+            friend class _xb_arbitrary_data;
+            
+			_xb_arbitrary_data_uniform_array() {};
+			_xb_arbitrary_data_uniform_array( const adata_indexer &indexer ):
+                	_indexer( indexer ) {};
+			_xb_arbitrary_data_uniform_array( const unsigned nb, const adata_indexer &idx );
+			_xb_arbitrary_data_uniform_array( const _xb_arbitrary_data_uniform_array &given );
+            _xb_arbitrary_data_uniform_array( const _ua_type &vec );
+			_xb_arbitrary_data_uniform_array &operator=( const _xb_arbitrary_data_uniform_array& );
+			_xb_arbitrary_data_uniform_array &operator+( const _xb_arbitrary_data_uniform_array &right );
+			
+			//NOTE: invoking set_indexer will reset ALL members!
+			void set_indexer( const adata_indexer &given );
+			void push_indexer( adata_field &given ); //will add a field to all elements
+			adata_field pop_indexer(); //pops the last element of indexer
+			adata_indexer get_indexer() { return _indexer; };
+			//NOTE: where are the signle field operations?
+			//      DANGER all members of an array SHARE an indexer and can modify it
+			
+			//goodies with un- and subscription
+			void push_back( const adata &given );
+			adata pop_back();
+			_ua_iter insert( _ua_iter pos, adata &val );
+			_ua_iter insert( _ua_iter pos, _ua_iter first, _ua_iter last );
+			_ua_iter erase( _ua_iter pos );
+			_ua_iter erase( _ua_iter first, _ua_iter last );
+			
+			//some forwarding of the underlying vector
+			adata &operator[]( unsigned i ){ return _ua[i]; };
+			adata operator[]( unsigned i  ) const { return _ua[i]; };
+			adata &at( unsigned i ){ return _ua.at(i); };
+			adata at( unsigned i ) const { return _ua.at(i); };
+			unsigned size() const { return _ua.size(); };
+			_ua_iter begin() { return _ua.begin(); };
+			_ua_iter end() { return _ua.end(); };
+			adata &front(){ return _ua.front(); };
+			adata &back(){ return _ua.back(); };
+			bool empty() const { return _ua.empty(); };
+			void clear(){ _ua.clear(); _indexer = adata_indexer(); };
+            _ua_type get_vector();
+		private:
+			adata_indexer _indexer;
+			_ua_type _ua;
+	} adata_uniarr;
 	
 	//----------------------------------------------------------------------------
 	//Two functions to be used in read/write operations (friended by the class)
@@ -124,9 +235,11 @@ namespace XB{
 	//               buffer will be allocated. An error is thrown if it's already
 	//               allocated.
 	int adata_getlbuf( void **linbuf, const _xb_arbitrary_data &given );
-	int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf );
-	/*_xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
-	                                const _xb_arbitrary_data &two );*/
-		
+	int adata_fromlbuf( _xb_arbitrary_data &here, const void *buf,
+                        adata_indexer *indexer = NULL );
+	_xb_arbitrary_data adata_merge( const _xb_arbitrary_data &one,
+	                                const _xb_arbitrary_data &two );
+	void adata_put( FILE *stream, const adata &given );
+
 }
 #endif
