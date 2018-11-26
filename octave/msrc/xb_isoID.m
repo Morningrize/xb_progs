@@ -17,7 +17,7 @@
 % -- pees{Z,AonZ}: the fitted parameters
 % -- err{Z,AonZ}: the errors thereupon
 
-function [blob_ellispes, peesZ, errZ, peesAonZ, errAonZ] = xb_isoID( data, nsigma )
+function [blob_ellispes, peesZ, errZ, peesAonZ, errAonZ] = xb_isoID( data, nsigma, zcut )
     if isstruct( data ) && ~isfield( data, 'in_Z' ) || ~isfield( data, 'in_A_on_Z' )
         error( 'Not an XB data structure or a matrix.' );
     elseif ~ismatrix( data )
@@ -34,9 +34,9 @@ function [blob_ellispes, peesZ, errZ, peesAonZ, errAonZ] = xb_isoID( data, nsigm
         
     if nargin == 1
         nsigma = 2;
-        zcut = 50.3;
+        zcut = 50;
     elseif nargin == 2
-        zcut = 50.3; 
+        zcut = 50; 
     end
     
     

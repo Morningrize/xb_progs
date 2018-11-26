@@ -55,12 +55,14 @@ function [data_corrected, shift_Z, shift_AonZ, ...
     peesAonZ_fit = {};
     errAonZ_fit = {};
     
+    __zcut = 50;
+    
     for pp=pivots
         idx_min = max( pp - corrector_halfwidth, 1 );
         idx_max = min( pp + corrector_halfwidth, d_length );
-        selection = find( inz(idx_min:idx_max) <= 50 );
+        selection = find( inz(idx_min:idx_max) <= __zcut );
     
-        [hinaonz, binaonz] = hist( inaonz(find( inz < zcut )), ...
+        [hinaonz, binaonz] = hist( inaonz(find( inz < __zcut )), ...
                                    [min(inaonz):0.001:max(inaonz)] );
         [inaonz_m, inaonz_im] = xb_multigaus_find( hinaonz, 'triglevel', ...
                                                 max( hinaonz )/10 );

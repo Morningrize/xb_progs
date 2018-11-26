@@ -29,9 +29,11 @@ function [ell, data_cut] = xb_find_isoID( some_ellispes, eleA, eleZ, data )
     end
     target_ctr = [eleZ, eleA/eleZ];
     
-    dist = sqrt( sum( (ctrZ - target_ctr').^2 ) );
+    %NOTE: the distance is weighted in this manner to put it at around
+    %      the same scale as the charge, otherwise the charge will be
+    %      unreasonably dominant.
+    dist = sqrt( sum( [1 0; 0 eleZ^2/eleA]*(ctrZ - target_ctr').^2 ) );
     [m, im] = min( dist );
-    
     ell = some_ellispes(im);
     if nargout == 1
         return;

@@ -15,55 +15,14 @@ function [evt, nb_removed] = xb_data_cut_on_nrg( evt, op_handle )
 		return;
 	end
 	
-	%prepare to spli the events in the number of processes
-	nb_events = length( evt );
-	adj = mod( nb_events, nproc );
-	if adj adj = nproc - adj; end
-	idx_part = 1:(nb_events+adj)/nproc:(nb_events+adj);
-	idx_part = linspace( idx_part, ...
-	                     idx_part+(nb_events+adj)/nproc-1, ...
-	                     (nb_events+adj)/nproc );
-	
-	%split the events into a cell
-	evt_part = {};
-	evt_rest = [];
-	nbr_rest = 0;
-	nb_proc = 1;
-	for ii=1:nproc
-		try
-			evt_part(ii) = evt(idx_part(ii,:));
-		catch
-			%I'm not yet sure this is the most brilliant solution
-			%but it's the best I can think right now.
-			[evt_rest nbr_rest] = xb_data_cut_on_nrg( evt(idx_part(ii):end), ...
-			                                          op_handle );
-			break;
-		end
-		nb_proc += 1;
-	end
-
-	%do the parallel execution
-	proc_handle = @( p ) _processor( p, op_handle );
- 	try
- 		pkg load parallel;
- 		[evt_part, nb_removed_part] = parcellfun( nb_proc, proc_handle, ...
- 		                                          evt_part, 'VerboseLevel', 0 );
- 	catch
-		warning( 'Parallel package not available. This will take a while.' );
-		[evt_part, nb_removed_part] = cellfun( proc_handle, evt_part );
- 	end
-	
-	%stitch together the stuff
-	evt = reshape( evt_part, [], 1 );
-	if ~isempty( evt_rest ) evt = [evt(:); evt_rest(:)]; end
-	nb_removed = sum( nb_removed_part ) + nbr_rest;
-
-	%prune the empty ones
-	evt = evt( find( [evt.n] ) );
+	proc_args = cell(1); proc_args(1) = op_handle;
+	[evt, nb_removed] = xb_parproc( evt, @_processor, proc_args );
 end
 
 %processor function
-function [evt, nb_removed] = _processor( evt, op_handle )
+function [evt, nb_removed] = _processor( evt, proc_args )
+    op_handle = proc_args{1};
+    
 	%loop clear the uninsteresting stuff.
 	nb_removed = sum( [evt.n] );
 	for ii=1:length( evt )
