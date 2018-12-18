@@ -15,6 +15,7 @@
 
 function [dataset, nb_removed] = xb_parproc( dataset, processor, proc_args )
     %prepare to split the events in the number of processes
+    dataset = dataset(:)';
 	nb_events = numel( dataset );
 	adj = mod( nb_events, nproc );
 	if adj adj = nproc - adj; end
@@ -32,9 +33,8 @@ function [dataset, nb_removed] = xb_parproc( dataset, processor, proc_args )
 		try
 			dataset_part(ii) = dataset(idx_part(ii,:));
 		catch
-			[dataset_rest, nbr_rest] = xb_parproc( dataset(idx_part(ii):end), ...
-                                                   processor, proc_args );
-			break;
+            %do padding
+            dataset_part(ii) = [dataset(idx_part(ii):end),dataset(1:adj)];
 		end
 		nb_proc += 1;
 	end
@@ -55,9 +55,9 @@ function [dataset, nb_removed] = xb_parproc( dataset, processor, proc_args )
 	%stitch together the stuff
 	dataset = reshape( dataset_part, [], 1 );
     if iscell( dataset ) dataset = cell2mat( dataset ); end
-	if ~isempty( dataset_rest ) dataset = [dataset(:); dataset_rest(:)]; end
-	nb_removed = sum( nb_removed_part ) + nbr_rest; 
+	nb_removed = sum( nb_removed_part ); 
 
-	%prune the empty ones
+	%remove the padding and prune the empty ones
+	dataset = dataset(1:nb_events);
 	dataset = dataset( find( [dataset.n] ) );
 end

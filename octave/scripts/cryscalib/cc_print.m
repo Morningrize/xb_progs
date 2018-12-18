@@ -38,6 +38,12 @@ function file = cc_print( file, writing_mode, lore )
 			fprintf( file, '\n' );
 		end
 		
+		if isfield( lore, 'avg_illum' )
+            fprintf( file, 'avg_illum' )
+            fprintf( file, ' %f', lore(cc).avg_illum );
+            fprintf( file, '\n' );
+        end
+		
 		fprintf( file, '\n@@@\n\n' );
 	end
 
