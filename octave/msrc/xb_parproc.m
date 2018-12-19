@@ -57,7 +57,6 @@ function [dataset, nb_removed] = xb_parproc( dataset, processor, proc_args )
     if iscell( dataset ) dataset = cell2mat( dataset ); end
 	nb_removed = sum( nb_removed_part ); 
 
-	%remove the padding and prune the empty ones
+	%remove the padding
 	dataset = dataset(1:nb_events);
-	dataset = dataset( find( [dataset.n] ) );
 end
