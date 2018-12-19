@@ -28,7 +28,9 @@ function crysnoise( noise_file_list, ofile_name, varargin )
 	lore = struct( 'hst', cell( 1, 162 ), ...
 	               'herr', cell( 1, 162 ), ...
 	               'binZ', cell( 1, 162 ), ...
-	               'avg_illum', cell( 1, 162 ) );
+	               'avg_illum', cell( 1, 162 ), ...
+                   'avg_illum_phit', cell( 1, 162 )
+                 );
 	
 	nf = size( noise_file_list, 1 );
 	data = [];
@@ -44,15 +46,19 @@ function crysnoise( noise_file_list, ofile_name, varargin )
         try
             [lore(ii).hst, lore(ii).binZ] = hist( nrg, max( nrg )/50 );
             lore(ii).herr = sqrt( lore(ii).hst );
+            %NOTE: pdist = h/sum( h ); phit = sum( h )/numel( data );
+            %      ---> pdist*phit = h/numel( data );
+            lore(ii).avg_illum_phit = sum( (lore(ii).hst.*lore(ii).binZ) )/numel( data );
+            lore(ii).avg_illum = sum( (lore(ii).hst.*lore(ii).binZ) )/sum( lore(ii).hst );
         catch
             lore(ii).hst = []; lore(ii).binz = []; lore(ii).herr = [];
+            lore(ii).avg_illum = 0;
         end
 		
-		lore(ii).avg_illum = sum( nrg )/numel( data );
 		clear dcut;
 	end
 	
 	save( [ofile_name,'__lore'], 'lore' );
-    fields = { 'avg_illum' };
+    fields = { 'avg_illum', 'avg_illum_phit' };
 	cc_print( ofile_name, 'w', lore, fields );
 end

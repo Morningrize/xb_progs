@@ -1,47 +1,28 @@
 %this function prints the calibration data into a hooman readable file
 %
-% file = cc_print( file{_name}, writin_mode, lore )
+% file = cc_print( file{_name}, writing_mode, lore )
 % -- lore: it's the structure where the results are stored (and that's also saved)
 %          here an easier file is produced. Per crystal.
 %returns nothing.
 %outputs a file.
 
-function file = cc_print( file, writing_mode, lore )
+function file = cc_print( file, writing_mode, lore, fields )
 	if ischar( file )
 		file = fopen( file, writing_mode );
 	end
 	
+	if nargin == 3
+        fields = { 'cutoff', 'cal_p', 'cal_e', 'dE_E' };
+    end
+	
 	for cc=1:162
 		fprintf( file, 'Crystal number %d\n', cc );
 		
-		if isfield( lore, 'cutoff' )
-			fprintf( file, 'Cutoff' );
-			fprintf( file, ' %f', lore(cc).cutoff );
-			fprintf( file, '\n' );
-		end
-		
-		if isfield( lore, 'cal_p' )
-			fprintf( file, 'Calibration' );
-			fprintf( file, ' %f', lore(cc).cal_p );
-			fprintf( file, '\n' );
-		end
-		
-		if isfield( lore, 'cal_e' )
-			fprintf( file, 'Errors' );
-			fprintf( file, ' %f', lore(cc).cal_e );
-			fprintf( file, '\n' );
-		end
-		
-		if isfield( lore, 'dE_E' )
-			fprintf( file, 'dE_E' )
-			fprintf( file, ' %f', lore(cc).dE_E );
-			fprintf( file, '\n' );
-		end
-		
-		if isfield( lore, 'avg_illum' )
-            fprintf( file, 'avg_illum' )
-            fprintf( file, ' %f', lore(cc).avg_illum );
-            fprintf( file, '\n' );
+        for ff=1:numel( fields )
+            if isfield( lore, fields{ff} )
+                fprintf( file, fields{ff} );
+                fprintf( file, ' %f\n', lore(cc).( fields{ff} ) );
+            end
         end
 		
 		fprintf( file, '\n@@@\n\n' );
