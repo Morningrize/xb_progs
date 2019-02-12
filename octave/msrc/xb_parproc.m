@@ -44,13 +44,14 @@ function [dataset, nb_removed] = xb_parproc( dataset, processor, proc_args )
 	try
 		pkg load parallel;
 		[dataset_part, nb_removed_part] = parcellfun( nb_proc, proc_handle, ...
-		                                              dataset_part, 'VerboseLevel', 0 );
+		                                              dataset_part, 'VerboseLevel', 0, ...
+													  'UniformOutput', false );
 	catch
 		warning( 'Parallel package not available. This will take a while.' );
 		[dataset_part, nb_removed_part] = cellfun( proc_handle, dataset_part, ...
                                                    'UniformOutput', false );
-        nb_removed_part = cell2mat( nb_removed_part );
 	end
+	nb_removed_part = cell2mat( nb_removed_part );
 	
 	%stitch together the stuff
 	dataset = reshape( dataset_part, [], 1 );
