@@ -144,7 +144,7 @@ int get_it( char *thr_name, float *cry_thr ){
 	FILE *thr_pipe = popen( pcommand, "r" );
 	
 	int c, count=0; float t;
-	while( !feof( thr_pipe ) ){
+	while( 1 ){
 		fscanf( thr_pipe, "%d", &c );
 		fscanf( thr_pipe, "%f", &t );
         if( feof( thr_pipe ) ) break;
