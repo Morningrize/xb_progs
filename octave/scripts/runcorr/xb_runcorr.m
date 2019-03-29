@@ -1,13 +1,11 @@
 %this fat tool will correct some run files for the shift on the incoming Z
 %and then return the result, ready for cuts.
 %
-% [data_corrected, shift_Z, shift_AonZ, shift_Z fit, shift_AonZ_fit] = xb_runcorr( data, isotope_Z, isotope_A, event_step )
+% [data_corrected, shift_Z, shift_AonZ, shift_Z fit, shift_AonZ_fit] = xb_runcorr( data, nb_pivots )
 %
 % parameters:
 % -- data: a data/track structure array (as it comes out of the box) containing one or more runs.       
-% -- isotope_Z: the target charge to fit.
-% -- isotope_A: the mass we're looking for.
-% -- event_step: OPTIONAL, check the shift every event_step events.
+% -- nb_pivots: the number of times the data is partitioned and checked.
 % returns:
 % --data_corrected: the same dataset, shifted.
 % --shift_Z: a 2xmany matrix containing the shift in the first row and the error thereof in the second

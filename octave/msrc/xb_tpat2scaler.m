@@ -40,7 +40,7 @@
 
 function [scalers, idx] = xb_tpat2scaler( target_dataset, tpat_in, tpat_out )
     if nargin == 1
-        scalers.a = 1; idx = [1:numel( target_dataset )];
+        scalers.a = 1; idx.in = [1:numel( target_dataset )];
         return
     end
     
