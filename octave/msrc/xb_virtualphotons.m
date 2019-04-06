@@ -33,7 +33,7 @@ function [nbf_e1, nbf_e2] = xb_virtualphotons( nrg, bt, Zp, Ap, Zt, At )
     if ~isempty( find( nrg > _E_max ) )
 		warning( 'Some energies are not accessible. Setting them to 0' );
 		nrg( find( nrg > _E_max ) ) = 0; %This will also null the adiabaticity parameter
-	end
+    end
 	
     _xi = (bt.^-1)*nrg*_b_min/(_hbar*_c*_gamma ); %the adiabaticity parameter, assuming all collisions at _b_min ATM.
     _K0 = besselk( 0, _xi );
