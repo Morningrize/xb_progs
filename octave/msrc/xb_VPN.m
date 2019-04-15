@@ -1,5 +1,7 @@
 %this function returns (in principle) the virtual photon number for an arbitrary multipolarity
 %and magnetic/electric mode.
+%All of the support functions are taken from C. Bertulani and G. Baur "Relativistic Coulomb Collisions",
+%    Nuclear Physics A442 (1985) 739-752
 %
 % dN/dE = xb_VPN( kind, order, speces )
 %
@@ -21,7 +23,14 @@ function vpn = xb_VPN( kind, order, specs )
 	if ~isscalar( bt ) && ~isscalar( nrg )
         error( 'Cannot handle array of velocities and gamma energies, yet.' );
     end
-
+    
+    if strcmp( kind, 'M' ) || strcmp( kind, 'm' )
+        G_plm = @__G_mag;
+    elseif strcmp( kind, 'E' ) || strcmp( kind, 'e' )
+        G_plm = @__G_el;
+    else
+        error( ['Kinds are M (m) and E (e), not ', kind] );
+    end
 
     _alpha = 0.0072973525664; %the fine structure constant, CODATA14
     _hbar = 6.62607015e-34/(2*pi); %reduced Plank constant.
@@ -43,19 +52,22 @@ function vpn = xb_VPN( kind, order, specs )
     
     l = order;
     m = [-l:l];
-    vpn = specs.Zp^2*_alpha*
+    vpn = specs.Zp^2*_alpha*l*factorial( factorial( 2*l+1 ) )^2/((2*pi)^3*(k+1)) ...
+          *abs( G_plm(:)' ).^2*__g( m, _xi );
 end
 
-%support function, contains bessel functions
+%rows: vary energy, columns: vary m
 function val = __g( m, xi )
-	K_m = besselk( m, xi );
-	K_mp1 = besselk( m+1, xi );
+    xi = xi(:)';
 	
-	
-	val = pi*xi.^2*( K_mp1.^2 - K_m.^2 - 2*m./xi.*K_m.*K_mp1 );
+	val = [];
+	for mm=m;
+	    K_m = besselk( mm, xi );
+	    K_mp1 = besselk( mm+1, xi );
+	    val = [val; pi*xi.^2*( K_mp1.^2 - K_m.^2 - 2*m./xi.*K_m.*K_mp1 )];
+	end
 end
 
-%
 function val = __G_mag( m, l, x )
 	if x >= 1
 		warning( '__G_el defined only for x < 1.' );

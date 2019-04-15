@@ -1,16 +1,16 @@
 %This function will calculate coulomb cross section, given a beam energy and some cross sections.
 %If the GDR/GQR is targeted, the function will know what to do.
 %
-% dxs_C/dE = xb_xcc( beam_energy, gamma_energy, xs_gam_eX );
+% [dxs_C/dE, [components]] = xb_xcc_gres( beam_beta, gamma_energy, xs_gam_eX );
 %
 %parameters:
-% -- beam_energy: it's clearly 42.
+% -- beam_beta: it's clearly 42.
 % -- gamma_energy: some sort of information about from where to where the xcc is calc'd.
 % -- xs_gam_eX: an array of functionals representing dxs/dE for different multipolarities.
 %returns:
 % -- the differential cross section for the given beam energy
 
-function xcc = xb_xcc( e_beam, e_gam, xs_gam_eX )
+function [xcc, components] = xb_xcc_gres( b_beam, e_gam, xs_gam_eX )
 	if ischar( xs_gam_eX )
 		if strcmp( xs_gam_eX, 'GDR' )
 			xs_gam_ex = @__xs_GDR_gam;
@@ -32,13 +32,27 @@ function xcc = xb_xcc( e_beam, e_gam, xs_gam_eX )
 		end
 	end
 	
-	xcc = %...
+	xcc = sum( 
 end
 
-function __xs_GDR_gam( nrg )
-	%...
+function sigma = __xs_GDR_gam( nrg, bt )
+	%this notation is not meant for efficiency, but for clarity.
+	e_m = @( a ) 31.2*a^(-1/3) + 20.6*a^(-1/6);
+	Gamma = @( a ) 0.026*e_m( a )^1.91;
+	TRK_e1 = @( z, a ) 60*(a-z)*z/a;
+	
+	sigma = 2/(pi*Gamma( 132 ))*TRK_e1( 50, 132 )./(1+(nrg.^2-e_m( 132 )./(nrg*Gamma( 132 ))));
 end
 
-function __xs_GQR_gam( nrg )
-	%...
+function [sigma_iv, sigma_is] = __xs_GQR_gam( nrg )
+	%here too: efficiency boo, clarity yee
+	e_m = @( a ) 64.0*a^-(1/3);
+	Gamma = @( a ) 16.0*a^-(1/3);
+	TRK_e2is = @( z, a ) 2.2e-4*z^2*a^-(1/3);
+	TRK_e2iv = @( z, a ) 2.2e-4*(a-z)*z*a^-(1/3);
+	
+	[~, nfb_e2] = xb_virtualphotons( nrg, bt, 50, 132, 82, 208 );
+	
+	sigma_is = 2/(pi*Gamma( 132 ))*TRK_e1is( 50, 132 )*nrg.^2./(1+(nrg.^2-e_m( 132 )./(nrg*Gamma( 132 ))));
+	sigma_iv = 2/(pi*Gamma( 132 ))*TRK_e1iv( 50, 132 )*nrg.^2./(1+(nrg.^2-e_m( 132 )./(nrg*Gamma( 132 ))));
 end
