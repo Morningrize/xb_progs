@@ -25,8 +25,7 @@ function [nbf_e1, nbf_e2] = xb_virtualphotons( nrg, bt, Zp, Ap, Zt, At )
     _c = 299792458; %speed of light, m/s
     _gamma = 1./sqrt( 1 - bt^2 ); %lorentz factor
     _b_min = 1.34*( Ap^(1/3) + At^(1/3) -0.75*( Ap^(-1/3) + At^(-1/3) ) )*1e-15; %minimum impact parameter, SI units.
-    _bees = 1.75e5*rand( size( nrg ) )*1e-15; %randomly generated impact parameters (m) up to atomic radius (more than that should mean closer to another nucleus, in a very simplistic fashion).
-    _bees( find( _bees < _b_min ) ) = 0; %this will set _xi = 0 --> nbf = 0 for that entry.
+    _bees = linspace( _b_min, 1.75e-10, length( nrg ) ); %impact parameters (m) up to atomic radius (more than that should mean closer to another nucleus, in a very simplistic fashion).
     _E_max = _hbar*_c*bt*_gamma/(_b_min); %maximum excitation energy (closer is a crash). This is in Joules now;
     
     nrg = nrg*1.6021766208e-16; %KeV to J
@@ -35,7 +34,7 @@ function [nbf_e1, nbf_e2] = xb_virtualphotons( nrg, bt, Zp, Ap, Zt, At )
 		nrg( find( nrg > _E_max ) ) = 0; %This will also null the adiabaticity parameter
     end
 	
-    _xi = (bt.^-1)*nrg*_b_min/(_hbar*_c*_gamma ); %the adiabaticity parameter, assuming all collisions at _b_min ATM.
+    _xi = (bt.^-1)*nrg.*_b_min/(_hbar*_c*_gamma ); %the adiabaticity parameter, assuming all collisions at _b_min ATM.
     _K0 = besselk( 0, _xi );
     _K1 = besselk( 1, _xi );
     _norm = 2*Zp^2*_alpha/(pi*bt^2);
@@ -45,4 +44,7 @@ function [nbf_e1, nbf_e2] = xb_virtualphotons( nrg, bt, Zp, Ap, Zt, At )
     
     nbf_e2 = _norm/(bt^2)*( 2*(1 - bt^2).*_K1.^2 + _xi.*(2 - bt^2)^2.*_K0.*_K1 ...
             + _xi.^2*bt^4/2.*(_K0.^2 - _K1.^2));
+            
+#     nbf_e1 = sort( nbf_e1, 'descend' );
+#     nbf_e2 = sort( nbf_e2, 'descend' );
 end
