@@ -30,21 +30,20 @@ function [nbf_e1, nbf_e2] = xb_virtualphotons( nrg, bt, Zp, Ap, Zt, At )
     
     nrg = nrg*1.6021766208e-16; %KeV to J
     if ~isempty( find( nrg > _E_max ) )
-		warning( 'Some energies are not accessible. Setting them to 0' );
-		nrg( find( nrg > _E_max ) ) = 0; %This will also null the adiabaticity parameter
+		warning( 'Some excitation energies are not accessible.' );
     end
 	
     _xi = (bt.^-1)*nrg.*_b_min/(_hbar*_c*_gamma ); %the adiabaticity parameter, assuming all collisions at _b_min ATM.
     _K0 = besselk( 0, _xi );
     _K1 = besselk( 1, _xi );
-    _norm = 2*Zp^2*_alpha/(pi*bt^2);
+    _norm = 2*Zt^2*_alpha/(pi*bt^2);
 
     
     nbf_e1 = _norm*( _xi.*_K0.*_K1 - _xi.^2*bt^2/2.*( _K1.^2 - _K0.^2 ) );
     
     nbf_e2 = _norm/(bt^2)*( 2*(1 - bt^2).*_K1.^2 + _xi.*(2 - bt^2)^2.*_K0.*_K1 ...
             + _xi.^2*bt^4/2.*(_K0.^2 - _K1.^2));
-            
+
 #     nbf_e1 = sort( nbf_e1, 'descend' );
 #     nbf_e2 = sort( nbf_e2, 'descend' );
 end

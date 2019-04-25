@@ -10,14 +10,14 @@
 %returns:
 % -- the differential cross section for the given beam energy
 
-function [xcc, components] = xb_xcc( b_beam, e_gam, xs_gam_eX )
+function [xcc, components] = xb_xcc( b_beam, e_ext, xs_gam_eX )
 	if ischar( xs_gam_eX )
 		if strcmp( xs_gam_eX, 'GDR' )
 			xs_gam_eX = @__xs_GDR_gam;
-			[nfb, ~] = xb_virtualphotons( e_gam*1e3, b_beam, 50, 132, 82, 208 );
+			[nfb, ~] = xb_virtualphotons( e_ext, b_beam, 50, 132, 82, 208 );
 		elseif strcmp( xs_gam_eX, 'GQR' )
 			xs_gam_eX = @__xs_GQR_gam;
-			[~, nfb] = xb_virtualphotons( e_gam*1e3, b_beam, 50, 132, 82, 208 );
+			[~, nfb] = xb_virtualphotons( e_ext, b_beam, 50, 132, 82, 208 );
 		else
 			error( 'Unknown string.' );
 		end
@@ -34,11 +34,11 @@ function [xcc, components] = xb_xcc( b_beam, e_gam, xs_gam_eX )
 		end
 	end
 	
-	e_gam = e_gam(:);
+	e_ext = e_ext(:)*1e-3; %expecting KeV, using MeV
 	nfb = nfb(:);
-	components = xs_gam_eX( e_gam, b_beam );
+	components = xs_gam_eX( e_ext, b_beam );
 	
-	xcc = sum( 1./e_gam.*components.*nfb, 2 );
+	xcc = sum( 1./e_ext.*components.*nfb, 2 );
 end
 
 function sigma = __xs_GDR_gam( nrg, bt )
@@ -52,16 +52,17 @@ function sigma = __xs_GDR_gam( nrg, bt )
 	sigma = sigma(:);
 end
 
-function [sigma_iv, sigma_is] = __xs_GQR_gam( nrg )
+function sigma = __xs_GQR_gam( nrg )
 	%here too: efficiency boo, clarity yee
 	e_m = @( a ) 64.0*a^-(1/3);
 	Gamma = @( a ) 16.0*a^-(1/3);
 	TRK_e2is = @( z, a ) 2.2e-4*z^2*a^-(1/3);
 	TRK_e2iv = @( z, a ) 2.2e-4*(a-z)*z*a^-(1/3);
 	
-	sigma_is = 2/(pi*Gamma( 132 ))*TRK_e1is( 50, 132 )*nrg.^2./(1+((nrg.^2-e_m( 132 )^2)./(nrg*Gamma( 132 ))).^2);
-	sigma_iv = 2/(pi*Gamma( 132 ))*TRK_e1iv( 50, 132 )*nrg.^2./(1+((nrg.^2-e_m( 132 )^2)./(nrg*Gamma( 132 ))).^2);
+	sigma_is = 2/(pi*Gamma( 132 ))*TRK_e2is( 50, 132 )*nrg.^2./(1+((nrg.^2-e_m( 132 )^2)./(nrg*Gamma( 132 ))).^2);
+	sigma_iv = 2/(pi*Gamma( 132 ))*TRK_e2iv( 50, 132 )*nrg.^2./(1+((nrg.^2-e_m( 132 )^2)./(nrg*Gamma( 132 ))).^2);
 	
 	sigma_is = sigma_is(:);
 	sigma_iv = sigma_iv(:);
+	sigma = [sigma_iv, sigma_is];
 end
