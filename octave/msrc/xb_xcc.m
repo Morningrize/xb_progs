@@ -54,13 +54,15 @@ end
 
 function sigma = __xs_GQR_gam( nrg )
 	%here too: efficiency boo, clarity yee
-	e_m = @( a ) 64.0*a^-(1/3);
-	Gamma = @( a ) 16.0*a^-(1/3);
+	e_m_is = @( a ) 64.0*a^-(1/3);
+	Gamma_is = @( a ) 16.0*a^-(1/3);
+	e_m_iv = @( a ) 0;
+	Gamma_iv = @( a ) 0;
 	TRK_e2is = @( z, a ) 2.2e-4*z^2*a^-(1/3);
 	TRK_e2iv = @( z, a ) 2.2e-4*(a-z)*z*a^-(1/3);
 	
-	sigma_is = 2/(pi*Gamma( 132 ))*TRK_e2is( 50, 132 )*nrg.^2./(1+((nrg.^2-e_m( 132 )^2)./(nrg*Gamma( 132 ))).^2);
-	sigma_iv = 2/(pi*Gamma( 132 ))*TRK_e2iv( 50, 132 )*nrg.^2./(1+((nrg.^2-e_m( 132 )^2)./(nrg*Gamma( 132 ))).^2);
+	sigma_is = 2/(pi*Gamma_is( 132 ))*TRK_e2is( 50, 132 )*nrg.^2./(1+((nrg.^2-e_m_is( 132 )^2)./(nrg*Gamma_is( 132 ))).^2);
+	sigma_iv = 2/(pi*Gamma_iv( 132 ))*TRK_e2iv( 50, 132 )*nrg.^2./(1+((nrg.^2-e_m_iv( 132 )^2)./(nrg*Gamma_iv( 132 ))).^2);
 	
 	sigma_is = sigma_is(:);
 	sigma_iv = sigma_iv(:);
