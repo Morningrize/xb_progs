@@ -58,9 +58,11 @@ namespace XB{
 	//this function has the task of pruning out the non-number constant that are stuck inside
 	//the data
 	void data::probe_for_crap(){
+#define __crap_flag 2147483647 //2^31
 		for( int i=0; i < n; ++i ){
-			if( !isnan( t[i] ) && !isinf( t[i] ) ) empty_t = false;
-			else t[i] = 0;
+			if( isnan( t[i] ) ) t[i] = -__crap_flag;
+            else if( isinf( t[i] ) ) t[i] = __crap_flag;
+            else empty_t = false;
 			if( !isnan( pt[i] ) && !isinf( pt[i] ) ) empty_pt = false;
 			else pt[i] = 0;
 			if( !isnan( e[i] ) && !isinf( e[i] ) ) empty_e = false;
@@ -75,6 +77,7 @@ namespace XB{
 		
 		if( isnan( in_Z ) || isinf( in_Z ) ) in_Z = 0;
 		if( isnan( in_A_on_Z ) || isinf( in_A_on_Z ) ) in_A_on_Z = 0;
+#undef __crap_flag
 	}
 
 	
