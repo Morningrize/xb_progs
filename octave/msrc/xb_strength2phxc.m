@@ -24,14 +24,17 @@ function phxs = xb_strength2phxc( nrg, fsd, strength, l )
         error( 'fsd_nrg and energy MUST have the same dimension.' );
     end
     
-    _hbar = 6.5821195144e-16; %reduced Planck constant, eV*s
+    _ech = -1.602176620899*1e-19; %charge of the electron, C
+    _hbar = 6.62607015e-34/(2*pi); %reduced Planck constant, J*s
     _c = 299792458; %speed of light, m/s
     
-    nrg = nrg*1e3; %KeV to eV
+    nrg = nrg*1.6021766208e-16; %KeV to J
     
     ki = nrg/(_hbar*_c);
     phxs = (2*pi)^3*(l+1)/(l*xb_semifact( 2*l+1 )^2) * ...
-           fsd.*ki.^(2*l-1)*strength;
+           fsd.*ki.^(2*l-1)*strength*_ech^2;
+    %and it plops out in barns. Hopefully.
+    
 end
     
     
