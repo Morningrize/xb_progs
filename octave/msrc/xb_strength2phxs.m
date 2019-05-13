@@ -17,7 +17,7 @@
 %NOTE: this function does not sum over final states, but considers one single B(pl, i->f )
 %      at one time. If you need to sum, eval more time and then sum for phxs^pl.
 
-function phxs = xb_strength2phxc( nrg, fsd, strength, l )
+function phxs = xb_strength2phxs( nrg, fsd, strength, l )
     if is_function_handle( fsd )
         fsd = fsd( nrg );
     elseif size( fsd ) ~= size( nrg )
