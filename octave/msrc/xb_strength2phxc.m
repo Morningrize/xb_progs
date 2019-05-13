@@ -28,7 +28,6 @@ function phxs = xb_strength2phxc( nrg, fsd, strength, l )
     _c = 2.99792458e23; %speed of light, fm/s
     
     nrg = nrg*1.6021766208e-16; %KeV to J
-    
     strength = strength*100^l; %from b^l to fm^(2*l) 
     
     ki = nrg/(_hbar*_c); %this thing, as it is, has units of 1/fm.
