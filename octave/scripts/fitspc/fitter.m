@@ -23,8 +23,12 @@ function pees = fitter( spc_pees, spc_model, data, extremes, offset )
     end
     dspc = hist( nrg, binZ );
     model = @( p ) sum( (dspc - (offset + spc_model( p )).^2  ))/numel( data );
+    opts = optimset( 'MaxIter', 1e30, 'TolFun', 1e-30, 'TolX', 1e-30 );
+    
+    pees = fminsearch( model, pp, opts );
     while pp ~= pees
-        %...
+        pp = pees;
+        pees = fminsearch( model, pp, opts );
     end
 end
         

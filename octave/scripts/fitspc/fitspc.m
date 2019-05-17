@@ -111,12 +111,12 @@ end
 
 spc_pees = 0.001*ones( 1, numel( spectra ) ); 
 if ~exist( 'bkg', 'var' )
-    spc_model = @( pees ) hybridizer( pees, spectra, numel( data ) );
+    spc_model = @( pees ) hybridizer( pees, spectra, numel( data ), binZ );
 else
-    spc_model = @( pees ) hybridizer( pees, spectra, numel( data ), bkg );
+    spc_model = @( pees ) hybridizer( pees, spectra, numel( data ), binZ, bkg );
 end
 
-spc_pees = fitter( spc_pees, spc_model, data, extremes );
+spc_pees = fitter( spc_pees, spc_model, h_data, binZ, extremes, mtf );
 
 %writeout time
 save( fout, 'spc_pees', 'spc_model' );
