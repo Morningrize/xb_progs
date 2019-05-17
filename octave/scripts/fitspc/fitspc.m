@@ -7,22 +7,21 @@
 
 args = [ [pwd,'/fitspc.m']; argv() ];
 fin = {};
+fout = 'fitted_spectra.octave';
+loader = @xb_load_clusterZ;
+cutter = @xb_cluster_cut_on_field;
+hor_field = 'centroid_id';
+binZ = [0:50:1.2e4]; %standard binnage
+extremes = [0,1.2e4];
+fin = {};
 
 for ii=2:numel( args )
     curr = args{ii};
     prev = args{ii-1};
-    fin = {};
     if curr(1) ~= '-' && prev(1) ~= '-'
         fin = [fin; curr];
         continue;
     end
-    
-    fout = 'fitted_spectra.octave'
-    loader = @xb_load_clusterZ;
-    cutter = @xb_cluster_cut_on_field;
-    hor_field = 'centroid_id';
-    binZ = [0:50:1.2e4]; %standard binnage
-    extremes = [0,1.2e4];
     
     switch( curr )
         case { '-v', '--verbose' } %has no effect ATM
@@ -31,11 +30,12 @@ for ii=2:numel( args )
             %NOTE: this is the reaction probability for the 2+
             %      other reaction probabilities may become available
             %      in the future.
+            %NOTE: this doesn't work yet.
             rp = __check_arg( '-r', args, ii );
             error( '-r needs an argumen.' );
         case { '-o', '--output-file' }
             fout = __check_arg( '-o', args, ii );
-        case { '-d', '--data' }
+        case { '-t', '--type' }
             loader = __check_arg( '-d', args, ii );
             switch( loader )
                 case { 'data', 'Data', 'xb_data' }
@@ -85,7 +85,7 @@ for ii=1:numel( fin )-1
         spectra{ii} = spectra{ii}( randperm( numel( spectra{ii} ), numel( data ) ) );
     end
 end
-    
+
 %build the empty target model
 %NOTE: this is valid only for the front of the CB.
 %      full and back may become available later.
@@ -105,7 +105,7 @@ mtf = gscaler( numel( data ) )*gmodel_mtf( pees_mtf, { [], binZ } );
 icbf = [xb_ball_neigh( 81, 5 ).i];
 ohf = @(p) xb_op_cbi( p, icbf );
 
-for ii=i:numel( spectra )
+for ii=1:numel( spectra )
     spectra(ii) = cutter( spectra{ii}, ohf, hor_field );
 end
 
@@ -116,7 +116,7 @@ else
     spc_model = @( pees ) hybridizer( pees, spectra, numel( data ), binZ, bkg );
 end
 
-spc_pees = fitter( spc_pees, spc_model, h_data, binZ, extremes, mtf );
+spc_pees = fitter( spc_pees, spc_model, h_data{2}, binZ, extremes, mtf );
 
 %writeout time
 save( fout, 'spc_pees', 'spc_model' );

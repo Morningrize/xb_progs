@@ -22,11 +22,11 @@ function spc_model = hybridizer( pees, spectra, nbe, binZ, bkg )
     spc_model = [];
     for ii=numel( spectra )
         hyspc = [spc_model; ...
-                 spectra{ii}(randperm( numel( spectra{ii} ) ), round( nbe*pees(ii) ))];
+                 spectra{ii}(randperm( numel( spectra{ii} ), round( nbe*pees(ii) ) ))];
     end
     
-    if nargin == 4
-        hyspc = [spc_model; bkg(randperm( numel( bkg ) ), nbe - numel( spc_model ))];
+    if nargin == 5
+        hyspc = [spc_model; bkg(randperm( numel( bkg ), nbe - numel( spc_model ) ))];
     end
     
     try
