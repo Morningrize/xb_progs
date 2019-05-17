@@ -116,7 +116,7 @@ else
     spc_model = @( pees ) hybridizer( pees, spectra, numel( data ), binZ, bkg );
 end
 
-spc_pees = fitter( spc_pees, spc_model, h_data{2}, binZ, extremes, mtf );
+spc_pees = fitter( spc_pees, spc_model, h_data{2}, extremes, mtf );
 
 %writeout time
 save( fout, 'spc_pees', 'spc_model' );

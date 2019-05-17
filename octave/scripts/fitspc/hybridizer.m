@@ -21,8 +21,9 @@ function spc_model = hybridizer( pees, spectra, nbe, binZ, bkg )
     
     spc_model = [];
     for ii=numel( spectra )
+        nn = min( round( nbe*pees(ii) ), numel( spectra{ii} ) );
         hyspc = [spc_model; ...
-                 spectra{ii}(randperm( numel( spectra{ii} ), round( nbe*pees(ii) ) ))];
+                 spectra{ii}(randperm( numel( spectra{ii} ), nn ))];
     end
     
     if nargin == 5

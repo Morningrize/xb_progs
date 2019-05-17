@@ -15,14 +15,13 @@
 function pees = fitter( spc_pees, spc_model, h_data, extremes, offset )
     pp = spc_pees;
     pees = zeros( size( spc_pees ) );
-    
-    model = @( p ) sum( (h_data - (offset + spc_model( p )).^2  ))/numel( data );
-    %TODO: the debug arrived here: it seems that offset (mtf) and spc_model
-    %      have different dimensions. Somehow.
-    opts = optimset( 'MaxIter', 1e30, 'TolFun', 1e-30, 'TolX', 1e-30 );
+
+    model = @( p ) sum( (h_data - (offset + spc_model( p )).^2  ))/numel( h_data );
+    opts = optimset( 'MaxIter', 1e9, 'TolFun', 1e-9, 'TolX', 1e-9 );
     
     pees = fminsearch( model, pp, opts );
     while pp ~= pees
+        disp( ii ); now;
         pp = pees;
         pees = fminsearch( model, pp, opts );
     end
