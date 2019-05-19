@@ -20,7 +20,7 @@ function spc_model = hybridizer( pees, spectra, nbe, binZ, bkg )
     end
     
     spc_model = [];
-    for ii=numel( spectra )
+    for ii=1:numel( spectra )
         nn = min( round( nbe*pees(ii) ), numel( spectra{ii} ) );
         hyspc = [spc_model; ...
                  spectra{ii}(randperm( numel( spectra{ii} ), nn ))];

@@ -16,14 +16,28 @@ function pees = fitter( spc_pees, spc_model, h_data, extremes, offset )
     pp = spc_pees;
     pees = zeros( size( spc_pees ) );
 
-    model = @( p ) sum( (h_data - (offset + spc_model( p )).^2  ))/numel( h_data );
+    model = @( p ) sum( (h_data - spc_model( p ) - offset).^2 )/numel( h_data );
     opts = optimset( 'MaxIter', 1e9, 'TolFun', 1e-9, 'TolX', 1e-9 );
     
+    ii=0;
     pees = fminsearch( model, pp, opts );
     while pp ~= pees
-        disp( ii ); now;
         pp = pees;
         pees = fminsearch( model, pp, opts );
+
+        screwed = find( pees > 1e3 );
+        if ~isempty( screwed )
+            warning( ['There was a runaway at iteration',num2str(ii)] )
+            pees( screwed ) = rand( numel( screwed ) );
+        end
+        
+        ++ii;
+        if ii > 1e3
+            warning( 'Could not converge in 1000 attempts' );
+            break;
+        end
     end
+    
+    %uncertainties estimation missing still!
 end
         

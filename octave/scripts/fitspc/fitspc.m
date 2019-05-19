@@ -10,10 +10,12 @@ fin = {};
 fout = 'fitted_spectra.octave';
 loader = @xb_load_clusterZ;
 cutter = @xb_cluster_cut_on_field;
+nrgizer = @xb_cluster_nrg;
 hor_field = 'centroid_id';
 binZ = [0:50:1.2e4]; %standard binnage
 extremes = [0,1.2e4];
 fin = {};
+do_fast = false;
 
 for ii=2:numel( args )
     curr = args{ii};
@@ -41,14 +43,15 @@ for ii=2:numel( args )
                 case { 'data', 'Data', 'xb_data' }
                     loader = @xb_load_data;
                     cutter = @xb_data_cut_on_field;
+                    nrgizer = @xb_data_nrg;
                     hor_field = 'i';
                 case { 'clusters', 'klz', 'cluster' }
-                    loader = @xb_load_clusterZ;
-                    cutter = @xb_cluster_cut_on_field;
-                    hor_field = 'centroid_id';
+                    %we are good already
+                    ;
                 case { 'adata', 'arbitrary' }
                     loader = @xb_load_adata;
                     cutter = @xb_data_cut_on_field;
+                    nrgizer = @xb_data_nrg;
                     hor_field = 'i';
                 otherwise
                     error( [loader,' is an unsupported format'] );
@@ -65,6 +68,8 @@ for ii=2:numel( args )
         case { '-x', '--extremes' }
             extremes = __check_arg( '-x', args, ii );
             extremes = sscanf( extremes, '[%f:%f]' );
+        case { '-F', '--fast' }
+            do_fast = true;
         otherwise
             error( ['option ',curr,' does not exist.'] );
     end
@@ -108,18 +113,35 @@ ohf = @(p) xb_op_cbi( p, icbf );
 for ii=1:numel( spectra )
     spectra(ii) = cutter( spectra{ii}, ohf, hor_field );
 end
-
-spc_pees = 0.001*ones( 1, numel( spectra ) ); 
-if ~exist( 'bkg', 'var' )
-    spc_model = @( pees ) hybridizer( pees, spectra, numel( data ), binZ );
-else
-    spc_model = @( pees ) hybridizer( pees, spectra, numel( data ), binZ, bkg );
+if exist( 'bkg', 'var' )
+    bkg = cutter( bkg, ohf, hor_field );
 end
 
-spc_pees = fitter( spc_pees, spc_model, h_data{2}, extremes, mtf );
+spc_pees = 0.001*ones( 1, numel( spectra ) ); 
+if do_fast
+    hspc = {};
+    for ii=1:numel( spectra )
+        nrg = nrgizer( spectra{ii} );
+        hspc(ii) = hist( nrg, binZ );
+    end
+    if ~exist( 'bkg', 'var' )
+        spc_model = @( pees ) hybridizer_fast( pees, hspc );
+    else
+        spc_model = @( pees ) hybridizer( pees, hspc, hist( nrgizer( bkg ), binZ ) );
+    end
+else
+    if ~exist( 'bkg', 'var' )
+        spc_model = @( pees ) hybridizer( pees, spectra, numel( data ), binZ );
+    else
+        spc_model = @( pees ) hybridizer( pees, spectra, numel( data ), binZ, bkg );
+    end
+end
+
+
+[spc_pees, spc_errs] = fitter( spc_pees, spc_model, h_data{2}, extremes, mtf );
 
 %writeout time
-save( fout, 'spc_pees', 'spc_model' );
+save( fout, 'spc_pees', 'spc_errs', 'spc_model' );
 
 %----------------------------------------------------------------------------------
 
