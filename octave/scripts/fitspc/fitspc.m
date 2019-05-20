@@ -115,6 +115,7 @@ for ii=1:numel( spectra )
 end
 if exist( 'bkg', 'var' )
     bkg = cutter( bkg, ohf, hor_field );
+    bkg = bkg( randperm( numel( bkg ), numel( data ) );
 end
 
 spc_pees = 0.001*ones( 1, numel( spectra ) ); 
