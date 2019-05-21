@@ -13,32 +13,21 @@
 % pees : the result of the fit.
 % pee_err : the errors thereupon (still experimental)
 
-function [pees, pee_errs] = fitter( spc_pees, spc_model, h_data, extremes, offset )
-    pp = spc_pees;
-    pees = zeros( size( spc_pees ) );
-
-    model = @( p ) sum( (h_data - spc_model( p ) - offset).^2 )/numel( h_data );
-    opts = optimset( 'MaxIter', 1e12, 'TolFun', 1e-12, 'TolX', 1e-12 );
-    
-    ii=0;
-    pees = fminunc( model, pp, opts );
-    while sum( (pp - pees).^2 ) > 1e-15
-        pp = pees;
-        pees = fminunc( model, pp, opts );
-
-        screwed = find( pees < 0 );
-        if ~isempty( screwed )
-            warning( ['There was a runaway at iteration ',num2str(ii)] )
-            pees( screwed ) = rand( numel( screwed ), 1 );
-        end
-        
-        ++ii;
-#         if ii > 1e3
-#             warning( 'Could not converge in 1000 attempts' );
-#             break;
-#         end
+function [pees, pee_errs] = fitter( spc_pees, spc_model, h_data, extremes, offset, minopt )
+    L_h_data = log( max( h_data, 1 ) );
+    if nargin >= 5
+        L_spc_model = @( p ) log( max( spc_model( p ) + offset, 1 ) );
+    else
+        L_spc_model = @( p ) log( max( spc_model( p ), 1 ) );
     end
-    ii
+    
+    model = @( p ) sum( norm(L_h_data - L_spc_model( p )) )/numel( h_data );
+    
+    if nargin == 6
+        [pees, jval, rc] = xb_gradient_descent( model, spc_pees, minopt );
+    else
+        [pees, jval, rc] = xb_gradient_descent( model, spc_pees );
+    end
     
     %NOTE: this is still experimental and might very well be BS
     J_cov = xb_covariance( model, pees );

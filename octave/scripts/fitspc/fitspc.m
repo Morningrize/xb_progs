@@ -15,6 +15,7 @@ hor_field = 'centroid_id';
 binZ = [0:50:1.2e4]; %standard binnage
 extremes = [0,1.2e4];
 fin = {};
+minopts = {};
 do_fast = false;
 
 for ii=2:numel( args )
@@ -70,6 +71,13 @@ for ii=2:numel( args )
             extremes = sscanf( extremes, '[%f:%f]' );
         case { '-F', '--fast' }
             do_fast = true;
+        case { '-m.lr', '--minimizer.learning-rate' }
+            minotps = [minopts, 'lr', str2num( __check_arg( '-m.lr', args, ii ) )];
+        case { '-m.zr', '--minimizer.zero-is' }
+            minotps = [minopts, 'zr', str2num( __check_arg( '-m.zr', args, ii ) )];
+        case { '-m,M', '-minimizer,max-iter' }
+            minotps = [minopts, 'M', str2num( __check_arg( '-m.M', args, ii ) )];
+        case
         otherwise
             error( ['option ',curr,' does not exist.'] );
     end
@@ -138,8 +146,12 @@ else
     end
 end
 
-
-[spc_pees, spc_errs] = fitter( spc_pees, spc_model, h_data{2}, extremes, mtf );
+if isempty( minopts )
+    [spc_pees, spc_errs] = fitter( spc_pees, spc_model, h_data{2}, extremes, mtf );
+else
+    [spc_pees, spc_errs] = fitter( spc_pees, spc_model, h_data{2}, extremes, ...
+                                   mtf, minopts );
+end
 
 %writeout time
 save( fout, 'spc_pees', 'spc_errs', 'spc_model' );
