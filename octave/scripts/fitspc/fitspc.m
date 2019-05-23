@@ -74,7 +74,7 @@ for ii=2:numel( args )
         case { '-m.lr', '--minimizer.learning-rate' }
             minotps = [minopts, 'lr', str2num( __check_arg( '-m.lr', args, ii ) )];
         case { '-m.zr', '--minimizer.zero-is' }
-            minotps = [minopts, 'zr', str2num( __check_arg( '-m.zr', args, ii ) )];
+            minotps = [minopts, 'z', str2num( __check_arg( '-m.z', args, ii ) )];
         case { '-m,M', '-minimizer,max-iter' }
             minotps = [minopts, 'M', str2num( __check_arg( '-m.M', args, ii ) )];
         case

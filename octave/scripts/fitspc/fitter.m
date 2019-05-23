@@ -1,7 +1,7 @@
 %This function does the fitting of a spectrum on top of a dataset.
 %Usually the spectrum comes out of simulation and the data from a detector.
 %
-% [pees, pee_errs] = fitter( spc_pees, spc_model, h_data, extremes, binZ, offset )
+% [pees, pee_errs] = fitter( spc_pees, spc_model, h_data, extremes, binZ, offset, minopts )
 %
 %parameters:
 % spc_pees: the parameters to build the hybrid spectrum
@@ -21,7 +21,13 @@ function [pees, pee_errs] = fitter( spc_pees, spc_model, h_data, extremes, offse
         L_spc_model = @( p ) log( max( spc_model( p ), 1 ) );
     end
     
-    model = @( p ) sum( norm(L_h_data - L_spc_model( p )) )/numel( h_data );
+    if ~exist( extremes )
+        model = @( p ) sum( norm(L_h_data - L_spc_model( p )) )/numel( h_data );
+    else
+        model = @( P ) sum( norm( L_h_data(extremes(1):extremes(2)) - ...
+                                  L_spc_model( p )(extremes(1):extremes(2)) ) )/ ...
+                                  numel( extremes(1):extremes(2) );
+    end
     
     if nargin == 6
         [pees, jval, rc] = xb_gradient_descent( model, spc_pees, minopt );
