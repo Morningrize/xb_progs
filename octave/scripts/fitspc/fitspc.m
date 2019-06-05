@@ -13,10 +13,20 @@ cutter = @xb_cluster_cut_on_field;
 nrgizer = @xb_cluster_nrg;
 hor_field = 'centroid_id';
 binZ = [0:50:1.2e4]; %standard binnage
-extremes = [0,1.2e4];
+extremes = [1,241];
 fin = {};
 minopts = {};
 do_fast = false;
+fit_engine = @fitter;
+
+function val = __check_arg( option, args, ii )
+    try
+        val = args{ii+1};
+    catch
+        error( ['option ',option,' needs an argumen.'] );
+        val = 'NULL';
+    end
+end
 
 for ii=2:numel( args )
     curr = args{ii};
@@ -35,11 +45,10 @@ for ii=2:numel( args )
             %      in the future.
             %NOTE: this doesn't work yet.
             rp = __check_arg( '-r', args, ii );
-            error( '-r needs an argumen.' );
         case { '-o', '--output-file' }
             fout = __check_arg( '-o', args, ii );
         case { '-t', '--type' }
-            loader = __check_arg( '-d', args, ii );
+            loader = __check_arg( '-t', args, ii );
             switch( loader )
                 case { 'data', 'Data', 'xb_data' }
                     loader = @xb_load_data;
@@ -77,9 +86,8 @@ for ii=2:numel( args )
             minotps = [minopts, 'z', str2num( __check_arg( '-m.z', args, ii ) )];
         case { '-m,M', '-minimizer,max-iter' }
             minotps = [minopts, 'M', str2num( __check_arg( '-m.M', args, ii ) )];
-        case
-        otherwise
-            error( ['option ',curr,' does not exist.'] );
+        case { '-M', '--manual' }
+            fit_engine = @manual_fitter;
     end
 end
 
@@ -123,15 +131,15 @@ for ii=1:numel( spectra )
 end
 if exist( 'bkg', 'var' )
     bkg = cutter( bkg, ohf, hor_field );
-    bkg = bkg( randperm( numel( bkg ), numel( data ) );
+    bkg = bkg( randperm( numel( bkg ), numel( data ) ) );
 end
 
 spc_pees = 0.001*ones( 1, numel( spectra ) ); 
 if do_fast
-    hspc = {};
+    hspc = [];
     for ii=1:numel( spectra )
         nrg = nrgizer( spectra{ii} );
-        hspc(ii) = hist( nrg, binZ );
+        hspc = [hspc; hist( nrg, binZ )];
     end
     if ~exist( 'bkg', 'var' )
         spc_model = @( pees ) hybridizer_fast( pees, hspc );
@@ -147,22 +155,12 @@ else
 end
 
 if isempty( minopts )
-    [spc_pees, spc_errs] = fitter( spc_pees, spc_model, h_data{2}, extremes, mtf );
+    [spc_pees, spc_errs] = fit_engine( spc_pees, spc_model, h_data{2}, extremes, binZ, mtf );
 else
-    [spc_pees, spc_errs] = fitter( spc_pees, spc_model, h_data{2}, extremes, ...
-                                   mtf, minopts );
+    [spc_pees, spc_errs] = fit_engine( spc_pees, spc_model, h_data{2}, extremes, ...
+                                       binZ, mtf, minopts );
 end
 
 %writeout time
 save( fout, 'spc_pees', 'spc_errs', 'spc_model' );
 
-%----------------------------------------------------------------------------------
-
-function val = __check_arg( option, args, ii )
-    try
-        val = args{ii+1};
-    catch
-        error( ['option ',option,' needs an argumen.'] );
-        val = 'NULL';
-    end
-end

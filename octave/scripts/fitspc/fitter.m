@@ -13,7 +13,8 @@
 % pees : the result of the fit.
 % pee_err : the errors thereupon (still experimental)
 
-function [pees, pee_errs] = fitter( spc_pees, spc_model, h_data, extremes, offset, minopt )
+function [pees, pee_errs] = fitter( spc_pees, spc_model, h_data, extremes, ...
+                                    binZ, offset, minopt )
     L_h_data = log( max( h_data, 1 ) );
     if nargin >= 5
         L_spc_model = @( p ) log( max( spc_model( p ) + offset, 1 ) );
@@ -21,7 +22,7 @@ function [pees, pee_errs] = fitter( spc_pees, spc_model, h_data, extremes, offse
         L_spc_model = @( p ) log( max( spc_model( p ), 1 ) );
     end
     
-    if ~exist( extremes )
+    if ~exist( 'extremes' )
         model = @( p ) sum( norm(L_h_data - L_spc_model( p )) )/numel( h_data );
     else
         model = @( P ) sum( norm( L_h_data(extremes(1):extremes(2)) - ...

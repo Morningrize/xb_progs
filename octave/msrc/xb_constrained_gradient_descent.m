@@ -16,22 +16,24 @@
 %      you'll spin around indefinitely.
 
 function [local_min, Jval, rc] = ...
-    xb_constrained_gradient_descent( function_handle, parameters, constraint, varargin )
+    xb_constrained_gradient_descent( function_handle, parameters, constraint, minopts )
     lr = 1e-2;
     zr = 1e-9;
     mi = 1e5;
     rc = 0;
     
-    for ii=1:2:numel( varargin )
-        switch( varargin{ii} )
-            case { 'lr', 'learning-rate' }
-                lr = varargin{ ii+1 };
-            case { 'z', 'zero-is' }
-                zr = varargin{ ii+1 };
-            case { 'M', 'max-iter' }
-                mi = varargin{ ii+1 };
-            otherwise
-                warning( ['Unkown option: ',varargin{ii}] );
+    if nargin == 3
+        for ii=1:2:numel( minopts )
+            switch( minopts{ii} )
+                case { 'lr', 'learning-rate' }
+                    lr = minopts{ ii+1 };
+                case { 'z', 'zero-is' }
+                    zr = minopts{ ii+1 };
+                case { 'M', 'max-iter' }
+                    mi = minopts{ ii+1 };
+                otherwise
+                    warning( ['Unkown option: ',minopts{ii}] );
+            end
         end
     end
     

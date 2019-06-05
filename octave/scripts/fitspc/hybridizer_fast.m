@@ -5,7 +5,7 @@
 %
 %parameters:
 % pees : the wheighting of the spectra.
-% hspc : the HISTOGRAM of the spectra, in a cell array.
+% hspc : the HISTOGRAM of the spectra, arranged in a nice matrix.
 % hbkg : optionally, the HISTOGRAM of the background.
 %        This will always be scaled to 1. For now.
 %returns:
@@ -14,14 +14,12 @@
 %NOTE: this function is essentially a sum, might not even be worth it
 
 function spc_model = hybridizer_fast( pees, hspc, hbkg )
-    if numel( pees ) ~= numel( hspc )
-        error( 'pees and hspc must have the same numel' );
+    if length( pees ) ~= size( hspc, 1 )
+        error( 'pees and hspc sizes do not match up' );
     end
     
-    spc_model = zeros( size( hspc{1} ) );
-    for ii=1:numel( hspc )
-        spc_model += round( pees(ii)*hspc{ii} );
-    end
+    pees = pees(:)';
+    spc_model = pees*hspc;
     
     if nargin == 3
         spc_model += hbkg;
