@@ -32,7 +32,7 @@ function phxs = xb_strength2phxs( nrg, fsd, strength, l )
     
     ki = nrg/(_hbar*_c); %this thing, as it is, has units of 1/fm.
     phxs = (2*pi)^3*(l+1)/(l*xb_semifact( 2*l+1 )^2) * ...
-           fsd.*ki.^(2*(l-1))*strength;
+           fsd.*ki.^(2*(l-1)).*strength;
     %And this has the units of fm^2. Which is correct.
     %NOTE: it stinks SO MUCH like there have been a e^-2 left off in Ber87 in this formula
     %      (Dominic had a parenthesis off, ki^(2*l-1) <-- ki^(2*(l-1)) ).

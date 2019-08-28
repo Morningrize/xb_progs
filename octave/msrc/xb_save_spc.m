@@ -15,20 +15,19 @@ function xb_save_spc( fname, hst, bins, herr, varargin )
         hist_errors = sqrt( hst );
     end
     
-    of = fopen( [fname,'.dat'], 'w' );
-    if of == -1
-        error( 'Cannot open or create the file.' );
-    end
-    args = varargin;
-    if ~isempty( args )
-        __write_header( of, varargin );
+    if iscell( bins )
+        fnames = cell( size( bins ) );
+        nb_dat = numel( bins );
+        for ii=1:nb_dat
+            fnames(ii) = [fname,'-',num2str(ii)];
+            __write_data( fnames{ii}, bins{ii}, hst{ii}, herr{ii} );
+        end
+    else
+        nb_dat = 1;
+        __write_data( [fname,'-1'], bins, hst, herr );
     end
 
-    fprintf( of, '%f %f %f\n', [bins(:), hst(:), herr(:)]' );
-    fflush( of );
-    fclose( of );
-
-    __write_plg( fname );
+    __write_plg( fname, nb_dat ); 
 end
 
 function __write_header( of, args )
@@ -41,11 +40,23 @@ function __write_header( of, args )
     end
 end
 
-function __write_plg( fname, title, datalabel, xlabel, ylabel )
-    if ~exist( 'title' ); title = fname; done
-    if ~exist( 'xlabel' ); xlabel = 'KeV';
-    if ~exist( 'ylabel' ); ylabel = '#/Kev';
-    if ~exist( 'datalabel' ); datalabel = 'Spc';
+function __write_data( fname, bins, hst, herr, varargin )
+    of = fopen( [fname,'.dat'], 'w' );
+    if of == -1
+        error( 'Cannot open or create the file.' );
+    end
+    __write_header( of, varargin );
+
+    fprintf( of, '%f %f %f\n', [bins(:), hst(:), herr(:)]' );
+    fflush( of );
+    fclose( of );
+end
+
+function __write_plg( fname, nb_files, titl, datalabel, xlabl, ylabl )
+    if ~exist( 'titl' ); titl = fname; end
+    if ~exist( 'xlabl' ); xlabl = 'KeV'; end
+    if ~exist( 'ylabl' ); ylabl = '#/Kev'; end
+    if ~exist( 'datalabel' ); datalabel = 'Spc'; end
 
     plg = fopen( [fname,'.plg'], 'w' );
     
@@ -53,20 +64,27 @@ function __write_plg( fname, title, datalabel, xlabel, ylabel )
     fprintf( plg, '#This file is a starter plot, automatically generated. Edit at will!\n\n' );
 
     fprintf( plg, '#Some preliminaries\n' );
-    fprintf( plg 'set grid\n' );
-    fprintf( plg, 'set title "%s"\n', title );
-    fprintf( plg, 'set xlabel "%s"\n', xlabel );
-    fprintf( plg, 'set ylabel "%s"\n\n', ylabel );
+    fprintf( plg, 'set grid\n' );
+    fprintf( plg, 'set title "%s"\n', titl );
+    fprintf( plg, 'set xlabel "%s"\n', xlabl );
+    fprintf( plg, 'set ylabel "%s"\n', ylabl );
+    fprintf( plg, 'set logscale y\n' );
+    fprintf( plg, 'set bars fullwidth\n\n' );
 
     fprintf( plg, '#The business end\n' );
     fprintf( plg, 'set terminal qt size 1920,1600 enhanced font "Verdana,24"\n' );
-    fprintf( plg, 'plot "%s" u 1:2 title "%s" w histeps lw 2, "" u 1:2:3 notitle w errorbars ps 0\n\n', [fname,'.dat'], datalabel );
+    fprintf( plg, 'plot ' );
+    for ii=1:nb_files
+        fprintf( plg, '"%s" u 1:2 title "%s" w histeps lw 2 lc %d, "" u 1:2:3 notitle w errorbars ps 0 lc %d', [fname,'-',num2str(ii),'.dat'], datalabel, ii, ii );
+        if ii < nb_files; fprintf( plg, ', \\\n' ); end
+    end
+    fprintf( plg, '\n\n' );
 
-    fptintf( plg, 'set terminal png size 1920,1600 enhanced font "Verdana,24"\n' );
-    fprintf( plg, 'set output "%s"\nreplot\n\n\', [fname,'.png'] );
+    fprintf( plg, 'set terminal png size 1920,1600 enhanced font "Verdana,24"\n' );
+    fprintf( plg, 'set output "%s"\nreplot\n\n', [fname,'.png'] );
 
     fprintf( plg, 'set terminal svg size 1920,1600 fname "Verdana" fsize 24\n' );
-    fprintf( plg, 'set output "%s"\nreplot\n\n\', [fname,'.svg'] );
+    fprintf( plg, 'set output "%s"\nreplot\n\n', [fname,'.svg'] );
 
     fflush( plg );
     fclose( plg );

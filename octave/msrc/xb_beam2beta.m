@@ -2,7 +2,7 @@
 %
 % beta = beam2beta( beam_amev, beam_a, beam_z )
 
-function beta = beam2beta( beam_amev, beam_a, beam_z )
+function beta = xb_beam2beta( beam_amev, beam_a, beam_z )
 	__proton_mass = 938.2720814;
 	__neutron_mass = 939.5654135;
 	
