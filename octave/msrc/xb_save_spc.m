@@ -53,6 +53,8 @@ function __write_data( fname, bins, hst, herr, varargin )
 end
 
 function __write_plg( fname, nb_files, titl, datalabel, xlabl, ylabl )
+    if exist( [fname,'.plg'], 'file' ); return; end
+
     if ~exist( 'titl' ); titl = fname; end
     if ~exist( 'xlabl' ); xlabl = 'KeV'; end
     if ~exist( 'ylabl' ); ylabl = '#/Kev'; end

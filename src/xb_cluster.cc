@@ -227,7 +227,7 @@ namespace XB{
 	//      Also, I'm considering having another function
 	//      for a self limiting bead cluster...
 	unsigned int beading_order( float e ){
-		unsigned o = (unsigned int)round( LUT_INTERCEPT + LUT_FACTOR*pow( e, 1/3 ) );
+		unsigned o = (unsigned int)round( LUT_INTERCEPT + LUT_FACTOR*pow( e, 1/2 ) );
 		return (o<1)?1:o;
 	}
 	
