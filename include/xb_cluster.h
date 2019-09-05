@@ -86,8 +86,8 @@ namespace XB{
 	//they essentially follow the energy deposits up to "order" many
 	cluster make_one_cluster_bead( const data &evnt, unsigned int order );
 	//the two fitted parameters I'm using here
-#define LUT_INTERCEPT -0.10937
-#define LUT_FACTOR     1.90571
+#define LUT_INTERCEPT 1.47
+#define LUT_FACTOR    0.03
 	unsigned int beading_order( float e ); //self limiting tool
 	
 	//aux functions

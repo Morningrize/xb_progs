@@ -1,17 +1,17 @@
-%this utility converts a reaction probability into a cross section,
+%this utility converts a cross section into a reaction probability,
 %given the target information
 %
-% xs = xb_rp2xs( rp, target_thickness, target_density_or_material )
+% rp = xb_xs2rp( xs, target_thickness, target_density_or_material )
 %
 %arguments:
-% --rp : the reaction probabilities to convert. Can be an array (or a spectrum).
+% --xs : the cross sections to convert. Can be an array (or a spectrum).
 % --target_thickness : the target target_thickness, g/cm^2
 % --target_density_or_material: either a bivector (density,molar mass
 %                               for the density or a string,
 %                               hoping the function knows the material.
 %NOTE: the density should be given in g/cm^3.
 
-function xs = xb_rp2xs( rp, thk, density_or_material )
+function rp = xb_xs2rp( xs, thk, density_or_material )
     if ischar( density_or_material )
         if strcmp( density_or_material, 'lead' )
             trho = 11.34;
@@ -42,13 +42,13 @@ function xs = xb_rp2xs( rp, thk, density_or_material )
     
     N_a = 6.02214076*1e23; %Brand new Avogadro's constant!
     
-    if iscell( rp )
-        xs = cell( size( rp ) );
+    if iscell( xs )
+        rp = cell( size( xs ) );
         for ii=1:length( rp )
-            xs(ii) = rp{ii}.*(mmass/(trho*N_a)*1e24); %already in barnZ.
+            rp(ii) = xs{ii}./(mmass/(trho*N_a)*1e24); %already in barnZ.
         end
     else
-        xs = rp.*(mmass/(trho*N_a)*1e24); %already in barnZ.
+        rp = xs./(mmass/(trho*N_a)*1e24); %already in barnZ.
     end
 end
     

@@ -1,6 +1,6 @@
 %this tiny script produces a spectrum
 %and I'm really pretty sure I did this already once and then it got lost
-% [hst, binz] = xb_make_spc( energy, bin, [figure] )
+% [hst, binz, herr] = xb_make_spc( energy, bin, [figure] )
 %
 %Where "bin" is either the width of the bin or an array defining the binnage
 %and figure is a figure handle to update.

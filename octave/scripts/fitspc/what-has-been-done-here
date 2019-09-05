@@ -1,0 +1,17 @@
+Tue 21 May 09:20:07 CEST 2019: Hey, a logfile in a development folder? How come?
+Tue 21 May 09:20:25 CEST 2019: Because there are some comments to be made here, since this should be the arrival of my PhD.
+Tue 21 May 09:21:47 CEST 2019: First and foremost: we are not going to be able to fit anything in the region infested by the atomic background. This because everything is so stupidly huge.
+Tue 21 May 09:22:46 CEST 2019: Unless some incredibly aggressive weighting is used --as in: logaritmic.
+Tue 21 May 09:30:44 CEST 2019: Yup: with the background VERY close to the signal (which at the moment is a simulation of that same background + some shit I'm trying to fit)
+Tue 21 May 09:40:14 CEST 2019: Yeah, log weighting it the bkg part becomes less preponderant. And also, it reflects our interesti in it.
+Tue 21 May 16:35:30 CEST 2019: Ukei, the thing is working. Just it's clearly freaking out because the fit converges into negative coefficients. Which is a dick.
+Tue 21 May 16:47:54 CEST 2019: Maybe this dataset doesn't have the empty target
+Tue 21 May 16:49:36 CEST 2019: Nope.
+Tue 21 May 18:40:16 CEST 2019: Ok, actually the minimizer(s) find a better minimum than supertrendize. Which is cool. But also not, since the coefficients for the spectra are a) not the ones that are supposed to be and b) not even positive.
+Tue 21 May 18:40:53 CEST 2019: This means: tomorrow I have to produce a manual, interactive minimizer, because this fit will NEVER ever converge to a sensible value without a human brain in the mix.
+.........................NOTE: this makes it a "machine aided guess" rather than a fit, but we'll have to take it. As for where we'll need to take it, nobody knows yet, but we'll have to.
+Mon  3 Jun 11:32:46 CEST 2019: We're back onto this. Refining the hybridizer AND the manual fitter: would be nice to be ready by day after tomorrow.
+Tue  4 Jun 15:06:35 CEST 2019: Debugging...........
+Tue  4 Jun 15:32:08 CEST 2019: Aaand the manual fitter is ready. That's good.
+Wed  5 Jun 14:22:21 CEST 2019: let's try the whole script. Also, with some noise.
+Wed  5 Jun 17:09:43 CEST 2019: Success for what it needs to do. Great.
