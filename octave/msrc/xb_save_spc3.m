@@ -10,7 +10,7 @@
 % -- hist_errors: the error bars (it's optional, if not specified they are calculated)
 % -- comments: a number of strings to put in the header
 
-function xb_save_spc( fname, hst, bins, herr, varargin )
+function xb_save_spc3( fname, hst, bins, herr, varargin )
     if nargin == 3
         hist_errors = sqrt( hst );
     end
@@ -20,16 +20,16 @@ function xb_save_spc( fname, hst, bins, herr, varargin )
         error( 'Cannot open or create the file.' );
     end
     __write_header( of, varargin );
-
-    dlmwrite( of, hst, '    ', 0, 0 );
+    __write_data3( of, hst, bins );
+    
     fflush( of );
     fclose( of );
     
-    __write_plg3( fname, [max( max(hst) ), bins{1}(1), bins{1}(end), bins{2}(1), bins{2}(end)] ); 
+    __write_plg3( fname, hst, bins ); 
 end
 
 function __write_header( of, args )
-    fprintf( of, '# File generated with XB progs, for gnuplot. XY heatmap of Z.\n' );
+    fprintf( of, '# File generated with XB progs, for gnuplot. YXZ row blocks.\n\n' );
     for ii=1:numel( args )
         if ischar( args{ii} )
            fprintf( of, '# %s\n', args{ii} );
@@ -38,9 +38,21 @@ function __write_header( of, args )
     end
 end
 
-function __write_plg3( fname, dspec, titl, datalabel, xlabl, ylabl )
-    if exist( [fname,'.plg'], 'file' ); return; end
+function __write_data3( of, hst, bins )
+    ybins = bins{2};
+    xbins = bins{1};
 
+    for ii=1:numel( ybins )
+        fprintf( of, '%f %f %f\n', [ones( numel( xbins ), 1 )*ybins(ii), xbins(:), hst(ii,:)(:)]' );
+        fprintf( of, '\n' );
+    end
+end
+
+function __write_plg3( fname, hst, bins, titl, datalabel, xlabl, ylabl )
+    %if exist( [fname,'.plg'], 'file' ); return; end
+
+    boffx = 0.5*(bins{1}(2)-bins{1}(1));
+    boffy = 0.5*(bins{2}(2)-bins{2}(1));
     if ~exist( 'titl' ); titl = fname; end
     if ~exist( 'xlabl' ); xlabl = 'X'; end
     if ~exist( 'ylabl' ); ylabl = 'Y'; end
@@ -48,7 +60,7 @@ function __write_plg3( fname, dspec, titl, datalabel, xlabl, ylabl )
 
     plg = fopen( [fname,'.plg'], 'w' );
     
-    fprintf( plg, '#! /usr/bin/gnuplot -p -c\n\n' );
+    fprintf( plg, '# !/usr/bin/gnuplot -p -c\n\n' );
     fprintf( plg, '#This file is a starter plot, automatically generated. Edit at will!\n\n' );
 
     fprintf( plg, '#Some preliminaries\n' );
@@ -56,18 +68,17 @@ function __write_plg3( fname, dspec, titl, datalabel, xlabl, ylabl )
     fprintf( plg, 'set title "%s"\n', titl );
     fprintf( plg, 'set xlabel "%s"\n', xlabl );
     fprintf( plg, 'set ylabel "%s"\n', ylabl );
-    fprintf( plg, 'set xrange [%f:%f]\n', dspec(2), dpsec(3) );
-    fprintf( plg, 'set yrange [%f:%f]\n', dspec(4), dspec(5) );
-    fprintf( plg, 'set cbrange [0:%d]\n', dspec(1) );
-    fprintf( plg, 'set cb format "%%d"\n' );
-    fprintf( plg, 'set cbtics' );
-    fprintf( plg, 'set palette defined ( 0 "white", 17 "dark blue", 33 "blue", 50 "yellow", 66 "red", 100 "dark red" )\n' );
-    fprintf( plg, 'set view map\n' );
+    fprintf( plg, 'set xrange [%f:%f]\n', bins{1}(1)-boffx, bins{1}(end)-boffx );
+    fprintf( plg, 'set yrange [%f:%f]\n', bins{2}(1)-boffy, bins{2}(end)-boffy );
+    fprintf( plg, 'set cbrange [%d:%d]\n', min( min( hst) ), max( max( hst ) ) );
+    fprintf( plg, 'set format cb "%%.0f"\n' );
+    fprintf( plg, 'set cbtics scale 0\n' );
+    fprintf( plg, 'set palette defined ( 0 "white", 17 "dark-blue", 33 "blue", 50 "yellow", 66 "orange", 100 "dark-red" )\n' );
+    fprintf( plg, 'set view map\n\n' );
 
     fprintf( plg, '#The business end\n' );
     fprintf( plg, 'set terminal qt size 1920,1600 enhanced font "Verdana,24"\n' );
-    fprintf( plg, 'splot ' );
-    fprintf( plg, '"%s" matrix title "%s" w image\n\n', [fname,'.dat'], datalabel );
+    fprintf( plg, 'plot "%s" u 2:1:3 with image title "%s"\n\n', [fname,'.dat'], datalabel );
 
     fprintf( plg, 'set terminal png size 1920,1600 enhanced font "Verdana,24"\n' );
     fprintf( plg, 'set output "%s"\nreplot\n\n', [fname,'.png'] );
