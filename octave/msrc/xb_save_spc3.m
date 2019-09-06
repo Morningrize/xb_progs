@@ -1,7 +1,7 @@
 %this tiny utility prints a spectrum in gnuplot-friendly format, the 3D edition!!!
 %And will also generate a .plg file to build the spectrum (you should then customize it in there)
 %
-% xb_save_spc3( fname, hst, bins, hist_errors, comments )
+% xb_save_spc3( fname, hst, bins, hist_errors, ellipse, comments )
 %
 %parameters:
 % -- fname: the name of the file to save into. Possibly without extension!
@@ -94,17 +94,19 @@ function __write_plg3( fname, hst, bins, ell, titl, datalabel, xlabl, ylabl )
     fprintf( plg, 'set cbrange [%d:%d]\n', min( min( hst) ), max( max( hst ) ) );
     fprintf( plg, 'set format cb "%%.0f"\n' );
     fprintf( plg, 'set cbtics scale 0\n' );
-    fprintf( plg, '#The ROOT-like palette is: white,dark-blue,cyan,orange,dark-red\n' )
+    fprintf( plg, '#Following: the actual log scale, not log palette. cbrange MUST start from 1!\n' );
+    fprintf( plg, '#set cbtics 10\n' );
+    fprintf( plg, '#set logscale cb\n' );
     fprintf( plg, 'set palette defined ( 0 "white", 1 "dark-green", 26 "forest-green", 51 "greenyellow", 75 "yellow", 100 "lemonchiffon" )\n' );
-    fprintf( plg, '#Following: a logarithmic palette. Uncomment if needed.\n' );
-    fprintf( plg, '#set palette defined( 0 "white", 1 "dark-green", 71 "forest-green", 85 "greenyellow", 94 "yellow", 100 "lemonchiffon" )\n' );
+    fprintf( plg, '#Following: a logarithmic palette and base. Uncomment if needed.\n' );
+    fprintf( plg, '#set palette defined( 0 "white", 1 "dark-green", 6 "forest-green", 15 "greenyellow", 29 "yellow", 100 "lemonchiffon" )\n' );
     fprintf( plg, 'set view map\n\n' );
 
     fprintf( plg, '#The business end\n' );
     fprintf( plg, 'set terminal qt size 1920,1600 enhanced font "Verdana,24"\n' );
-    fprintf( plg, 'plot "%s" u 2:1:3 with image notitle"', [fname,'.dat'] )
+    fprintf( plg, 'plot "%s" u 2:1:3 with image notitle', [fname,'.dat'] )
     if exist( [fname,'-cut.dat'] , 'file' )
-        fprintf( plg, '\\\n"%s" w lines lc "black" lw 2 title "cut"\n\n', [fname,'-cut.dat'] );
+        fprintf( plg, ', \\\n"%s" w lines lc "black" lw 2 title "cut"\n\n', [fname,'-cut.dat'] );
     else
         fprintf( plg, '\n' );
     end

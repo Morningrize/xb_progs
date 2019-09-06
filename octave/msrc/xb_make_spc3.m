@@ -47,6 +47,7 @@ function [hst, binz, herr] = xb_make_spc3( pairs, bin, div )
         elseif iscell( bin )
             [hst, binz] = hist3( pairs, bin );
         end
+        hst = hst'; %this appears to be necessary to make things the right way up
         herr = sqrt( hst );
     end
 end
