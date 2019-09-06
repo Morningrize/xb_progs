@@ -45,7 +45,11 @@ function __write_data3( of, hst, bins )
     xbins = bins{1};
 
     for ii=1:numel( ybins )
+        try
         fprintf( of, '%f %f %f\n', [ones( numel( xbins ), 1 )*ybins(ii), xbins(:), hst(ii,:)(:)]' );
+        catch
+        keyboard
+        end
         fprintf( of, '\n' );
     end
 end
@@ -64,8 +68,8 @@ function __write_cut3( fname, ell )
     fclose( of );
 end
 
-function __write_plg3( fname, hst, bins, titl, datalabel, xlabl, ylabl )
-    %if exist( [fname,'.plg'], 'file' ); return; end
+function __write_plg3( fname, hst, bins, ell, titl, datalabel, xlabl, ylabl )
+    if exist( [fname,'.plg'], 'file' ); return; end
 
     boffx = 0.5*(bins{1}(2)-bins{1}(1));
     boffy = 0.5*(bins{2}(2)-bins{2}(1));
@@ -80,7 +84,8 @@ function __write_plg3( fname, hst, bins, titl, datalabel, xlabl, ylabl )
     fprintf( plg, '#This file is a starter plot, automatically generated. Edit at will!\n\n' );
 
     fprintf( plg, '#Some preliminaries\n' );
-    fprintf( plg, 'set grid\n' );
+    fprintf( plg, 'set grid front\n' );
+    fprintf( plg, 'set tics front\n' );
     fprintf( plg, 'set title "%s"\n', titl );
     fprintf( plg, 'set xlabel "%s"\n', xlabl );
     fprintf( plg, 'set ylabel "%s"\n', ylabl );
@@ -89,12 +94,20 @@ function __write_plg3( fname, hst, bins, titl, datalabel, xlabl, ylabl )
     fprintf( plg, 'set cbrange [%d:%d]\n', min( min( hst) ), max( max( hst ) ) );
     fprintf( plg, 'set format cb "%%.0f"\n' );
     fprintf( plg, 'set cbtics scale 0\n' );
-    fprintf( plg, 'set palette defined ( 0 "white", 17 "dark-blue", 33 "blue", 50 "yellow", 66 "orange", 100 "dark-red" )\n' );
+    fprintf( plg, '#The ROOT-like palette is: white,dark-blue,cyan,orange,dark-red\n' )
+    fprintf( plg, 'set palette defined ( 0 "white", 1 "dark-green", 26 "forest-green", 51 "greenyellow", 75 "yellow", 100 "lemonchiffon" )\n' );
+    fprintf( plg, '#Following: a logarithmic palette. Uncomment if needed.\n' );
+    fprintf( plg, '#set palette defined( 0 "white", 1 "dark-green", 71 "forest-green", 85 "greenyellow", 94 "yellow", 100 "lemonchiffon" )\n' );
     fprintf( plg, 'set view map\n\n' );
 
     fprintf( plg, '#The business end\n' );
     fprintf( plg, 'set terminal qt size 1920,1600 enhanced font "Verdana,24"\n' );
-    fprintf( plg, 'plot "%s" u 2:1:3 with image title "%s", \\\n"%s" w lines lc "black" lw 2 title "cut"\n\n', [fname,'.dat'], datalabel, [fname,'-cut.dat'] );
+    fprintf( plg, 'plot "%s" u 2:1:3 with image notitle"', [fname,'.dat'] )
+    if exist( [fname,'-cut.dat'] , 'file' )
+        fprintf( plg, '\\\n"%s" w lines lc "black" lw 2 title "cut"\n\n', [fname,'-cut.dat'] );
+    else
+        fprintf( plg, '\n' );
+    end
 
     fprintf( plg, 'set terminal png size 1920,1600 enhanced font "Verdana,24"\n' );
     fprintf( plg, 'set output "%s"\nreplot\n\n', [fname,'.png'] );
