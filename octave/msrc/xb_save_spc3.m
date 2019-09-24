@@ -48,7 +48,6 @@ function __write_data3( of, hst, bins )
         try
         fprintf( of, '%f %f %f\n', [ones( numel( xbins ), 1 )*ybins(ii), xbins(:), hst(ii,:)(:)]' );
         catch
-        keyboard
         end
         fprintf( of, '\n' );
     end
