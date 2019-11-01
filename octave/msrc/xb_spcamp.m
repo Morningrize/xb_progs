@@ -24,10 +24,10 @@ function [aspc, aspcerr] = xb_spcamp( spc, bin, amp_factor, smooth )
         end
         smooth = round( smooth );
         if mod( smooth, 2 ) == 0; smooth += 1; end
-        spc = sgolayfilt( spc, smooth );
+        spc = sgolayfilt( spc, 2, smooth );
         intg = sum( spc );
     end
-    erel = sqrt( spc )./spc;
+    erel = spc.^(-1/2);
 
     spc /= intg;
     gen = xb_arbitrary_distro( spc, bin );
