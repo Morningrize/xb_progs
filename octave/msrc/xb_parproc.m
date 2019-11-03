@@ -14,8 +14,8 @@
 % -- nb_removed: the number of removed elements
 
 function [dataset, nb_removed] = xb_parproc( dataset, processor, proc_args )
-    %prepare to split the events in the number of processes
-    dataset = dataset(:)';
+	%prepare to split the events in the number of processes
+	dataset = dataset(:)';
 	nb_events = numel( dataset );
 	adj = mod( nb_events, nproc );
 	if adj adj = nproc - adj; end
@@ -55,7 +55,7 @@ function [dataset, nb_removed] = xb_parproc( dataset, processor, proc_args )
 	
 	%stitch together the stuff
 	dataset = reshape( dataset_part, [], 1 );
-    if iscell( dataset ) dataset = cell2mat( dataset ); end
+	if iscell( dataset ) dataset = cell2mat( dataset ); end
 	nb_removed = sum( nb_removed_part ); 
 
 	%remove the padding

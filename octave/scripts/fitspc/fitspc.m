@@ -84,7 +84,7 @@ for ii=2:numel( args )
             minotps = [minopts, 'lr', str2num( __check_arg( '-m.lr', args, ii ) )];
         case { '-m.zr', '--minimizer.zero-is' }
             minotps = [minopts, 'z', str2num( __check_arg( '-m.z', args, ii ) )];
-        case { '-m,M', '-minimizer,max-iter' }
+        case { '-m.M', '--minimizer.max-iter' }
             minotps = [minopts, 'M', str2num( __check_arg( '-m.M', args, ii ) )];
         case { '-M', '--manual' }
             fit_engine = @manual_fitter;
@@ -110,8 +110,8 @@ end
 %build the empty target model
 %NOTE: this is valid only for the front of the CB.
 %      full and back may become available later.
-load /home/gatto/PhD_local/xb_data/xb/empty/9xx_AR/v00/empty-target-model
-mtf = gscaler( numel( data ) )*gmodel_mtf( pees_mtf, { [], binZ } );
+load /home/gatto/PhD_local/xb_data/xb/empty/9xx_AR/v01/empty-target-functional
+mtf = mt_scaler_2s133s( numel( data ) )*mt_model( binZ, pees_front );
 
 [h_data, ~, herr_data] = xb_make_spc_ffb( data, binZ );
 
