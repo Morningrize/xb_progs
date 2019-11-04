@@ -96,6 +96,20 @@ data = loader( fin{end} );
 if exist( 'fbkg', 'var' )
     bkg = loader( fbkg );
     bkg = bkg( randperm( numel( bkg ), numel( data ) ) );
+    [hbkg, ~, herrbkg] = xb_make_spc_ffb( bkg, binZ );
+end
+
+%build the empty target model
+%NOTE: this is valid only for the front of the CB.
+%      full and back may become available later.
+load /home/gatto/PhD_local/xb_data/xb/empty/9xx_AR/v01/empty-target-functional
+mtf = mt_scaler_2s133s( numel( data ) )*mt_model( binZ, pees_front );
+
+%make the bkg
+if exist( 'hbkg', 'var' )
+    hbkg_f = hbkg{2} + round( mtf );
+else
+    hbkg_f = round( mtf );
 end
 
 spectra = {};
@@ -106,12 +120,6 @@ for ii=1:numel( fin )-1
         spectra{ii} = spectra{ii}( randperm( numel( spectra{ii} ), numel( data ) ) );
     end
 end
-
-%build the empty target model
-%NOTE: this is valid only for the front of the CB.
-%      full and back may become available later.
-load /home/gatto/PhD_local/xb_data/xb/empty/9xx_AR/v01/empty-target-functional
-mtf = mt_scaler_2s133s( numel( data ) )*mt_model( binZ, pees_front );
 
 [h_data, ~, herr_data] = xb_make_spc_ffb( data, binZ );
 
@@ -129,10 +137,6 @@ ohf = @(p) xb_op_cbi( p, icbf );
 for ii=1:numel( spectra )
     spectra(ii) = cutter( spectra{ii}, ohf, hor_field );
 end
-if exist( 'bkg', 'var' )
-    bkg = cutter( bkg, ohf, hor_field );
-    bkg = bkg( randperm( numel( bkg ), numel( data ) ) );
-end
 
 spc_pees = 0.001*ones( 1, numel( spectra ) ); 
 if do_fast
@@ -141,24 +145,16 @@ if do_fast
         nrg = nrgizer( spectra{ii} );
         hspc = [hspc; hist( nrg, binZ )];
     end
-    if ~exist( 'bkg', 'var' )
-        spc_model = @( pees ) hybridizer_fast( pees, hspc );
-    else
-        spc_model = @( pees ) hybridizer( pees, hspc, hist( nrgizer( bkg ), binZ ) );
-    end
+    spc_model = @( pees ) hybridizer_fast( pees, hspc, hbkg_f );
 else
-    if ~exist( 'bkg', 'var' )
-        spc_model = @( pees ) hybridizer( pees, spectra, numel( data ), binZ );
-    else
-        spc_model = @( pees ) hybridizer( pees, spectra, numel( data ), binZ, bkg );
-    end
+    spc_model = @( pees ) hybridizer( pees, spectra, numel( data ), binZ, hbkg_f );
 end
 
 if isempty( minopts )
-    [spc_pees, spc_errs] = fit_engine( spc_pees, spc_model, h_data{2}, extremes, binZ, mtf );
+    [spc_pees, spc_errs] = fit_engine( spc_pees, spc_model, h_data{2}, extremes, binZ );
 else
     [spc_pees, spc_errs] = fit_engine( spc_pees, spc_model, h_data{2}, extremes, ...
-                                       binZ, mtf, minopts );
+                                       binZ, minopts );
 end
 
 %writeout time

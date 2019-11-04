@@ -8,13 +8,12 @@
 % spectra : the spectra
 % nb_events : the number of events the end product must have
 % binZ : the binnage to actually create the spectrum.
-% background : optionally, a background to add, on top of the whole thing
-%              This will always have weight 1.
+% background : optionally, the HISTOGRAM of a background. This won't participate into the fit.
 %returns:
 % hybrid_spectrum : a dataset composed by the spectra, weighted,
 %                   and optionally the background
 
-function spc_model = hybridizer( pees, spectra, nbe, binZ, bkg )
+function spc_model = hybridizer( pees, spectra, nbe, binZ, hbkg )
     if numel( pees ) ~= numel( spectra )
         error( 'pees and spectra must have the same numel' );
     end
@@ -26,10 +25,6 @@ function spc_model = hybridizer( pees, spectra, nbe, binZ, bkg )
                  spectra{ii}(randperm( numel( spectra{ii} ), nn ))];
     end
     
-    if nargin == 5
-        hyspc = [spc_model; bkg(randperm( numel( bkg ), nbe - numel( spc_model ) ))];
-    end
-    
     try
         nrg = xb_cluster_nrg( hyspc );
     catch
@@ -37,4 +32,5 @@ function spc_model = hybridizer( pees, spectra, nbe, binZ, bkg )
     end
     
     spc_model = hist( nrg, binZ );
+    if exist( 'hbkg', 'var' ); spc_model += hbkg;
 end
