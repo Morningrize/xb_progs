@@ -15,6 +15,8 @@ function [pees, pee_errs] = manual_fitter( spc_pees, spc_model, h_data, ...
     pees = spc_pees;
     L_model = __make_model( h_data, spc_model, extremes );
     
+    warning off;
+
     go_on = 1;
     while go_on
         user_says = input( 'mf> ', 's' );
@@ -101,6 +103,8 @@ function [pees, pee_errs] = manual_fitter( spc_pees, spc_model, h_data, ...
                 end
             case { 'ok', 'OK' }
                 go_on = 0;
+	    case { 'die!' }
+		exit;
             otherwise
                 warning( 'Unknown command. Read the HALP!' );
         end
@@ -110,6 +114,8 @@ function [pees, pee_errs] = manual_fitter( spc_pees, spc_model, h_data, ...
     end
     J_cov = xb_covariance( L_model, pees );
     pee_errs = sqrt( diag( J_cov ) );
+
+    warning on;
 end
 
 %utility to set parameters

@@ -80,6 +80,8 @@ for ii=2:numel( args )
             extremes = sscanf( extremes, '[%f:%f]' );
         case { '-F', '--fast' }
             do_fast = true;
+	case { '-f', '--fastish' }
+            do_fastish = true;
         case { '-m.lr', '--minimizer.learning-rate' }
             minotps = [minopts, 'lr', str2num( __check_arg( '-m.lr', args, ii ) )];
         case { '-m.zr', '--minimizer.zero-is' }
@@ -139,13 +141,16 @@ for ii=1:numel( spectra )
 end
 
 spc_pees = 0.001*ones( 1, numel( spectra ) ); 
-if do_fast
+if do_fast || do_fastish
     hspc = [];
     for ii=1:numel( spectra )
         nrg = nrgizer( spectra{ii} );
         hspc = [hspc; hist( nrg, binZ )];
     end
-    spc_model = @( pees ) hybridizer_fast( pees, hspc, hbkg_f );
+    if do_fast; spc_model = @( pees ) hybridizer_fast( pees, hspc, hbkg_f );
+    else if do_fastish;
+        spc_model = @( pees ) hybridizer_fastish( pees, hspc, hbkg_f, binZ );
+    end
 else
     spc_model = @( pees ) hybridizer( pees, spectra, numel( data ), binZ, hbkg_f );
 end
