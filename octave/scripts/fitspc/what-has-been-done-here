@@ -18,3 +18,10 @@ Wed  5 Jun 17:09:43 CEST 2019: Success for what it needs to do. Great.
 Mon  4 Nov 17:18:17 CET 2019: So, I'm back as the final uZer.
 Mon  4 Nov 17:18:33 CET 2019: Changed some things: now the background is just fixed and given. Full stop.
 Mon  4 Nov 17:19:11 CET 2019: This evening I'm going to develop a new hybridizer based on the new xb_spcamp, hoping to get something in the higher energy region... but, anyhow, this is cool and is going to work.
+Tue  5 Nov 09:43:34 CET 2019: Ok, last bit of tuning before starting production. This ends this week.
+Tue  5 Nov 09:44:07 CET 2019: now trying the fastish hybridizer, hoping that it is actually fastish
+Tue  5 Nov 09:44:32 CET 2019: Then I must also introduce limits to the parameters --I don't want them to fall under 0
+Tue  5 Nov 10:26:29 CET 2019: Ok, also the fastish hybirdizer is too slow. At least on the laptop. Now going for the good ol' fast one.
+Tue  5 Nov 12:40:06 CET 2019: bad news: the constrained gradient descent is very much slower
+Tue  5 Nov 13:49:47 CET 2019: good news: I found the problem. Bad news: I'm a pillock. Good news: I corrected the problem. Bad news: I can't test it before the meeting.
+Tue  5 Nov 15:48:06 CET 2019: Yup, with the limit  installed and working properly, the fatish is fast enough

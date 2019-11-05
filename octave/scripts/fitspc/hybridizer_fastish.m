@@ -12,7 +12,7 @@
 %returns:
 % spc_model : the result histogram
 
-function spc_model = hybridiszer_fastish( pees, hspc, hbkg, binZ )
+function spc_model = hybridizer_fastish( pees, hspc, hbkg, binZ )
     if length( pees ) ~= size( hspc, 1 )
         error( 'pees and hspc size do not match up' );
     end

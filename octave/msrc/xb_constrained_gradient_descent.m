@@ -22,7 +22,7 @@ function [local_min, Jval, rc] = ...
     mi = 1e5;
     rc = 0;
     
-    if nargin == 3
+    if exist( 'minopts', 'var' )
         for ii=1:2:numel( minopts )
             switch( minopts{ii} )
                 case { 'lr', 'learning-rate' }
@@ -38,6 +38,8 @@ function [local_min, Jval, rc] = ...
     end
     
     ii=0;
+    iup = [];
+    idn = [];
     do
         dp = parameters;
         grad = xb_gradient( function_handle, parameters );

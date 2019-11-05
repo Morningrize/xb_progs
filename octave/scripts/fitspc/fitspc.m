@@ -45,6 +45,9 @@ for ii=2:numel( args )
             %      in the future.
             %NOTE: this doesn't work yet.
             rp = __check_arg( '-r', args, ii );
+        case { '-R', '--resume' }
+            oldfile = __check_arg( '-R', args, ii );
+            spc_pees = [load( oldfile, 'spc_pees' ).spc_pees];
         case { '-o', '--output-file' }
             fout = __check_arg( '-o', args, ii );
         case { '-t', '--type' }
@@ -68,7 +71,7 @@ for ii=2:numel( args )
             end
         case { '-B', '--atomic-background' }
             fbkg = __check_arg( '-B', args, ii );
-        case { '-b', '--binnage' }
+        case{ '-b', '--binnage' }
             try
                 binZ = sscanf( args{ii+1}, '[%f:%f:%f]' )
             catch
@@ -95,10 +98,12 @@ end
 
 %Assuming the data file is the last of the list.
 data = loader( fin{end} );
+disp( 'Data on board!' );
 if exist( 'fbkg', 'var' )
     bkg = loader( fbkg );
     bkg = bkg( randperm( numel( bkg ), numel( data ) ) );
     [hbkg, ~, herrbkg] = xb_make_spc_ffb( bkg, binZ );
+    disp( 'Background loaded.' );
 end
 
 %build the empty target model
@@ -106,6 +111,7 @@ end
 %      full and back may become available later.
 load /home/gatto/PhD_local/xb_data/xb/empty/9xx_AR/v01/empty-target-functional
 mtf = mt_scaler_2s133s( numel( data ) )*mt_model( binZ, pees_front );
+disp( 'MT target model loaded.' );
 
 %make the bkg
 if exist( 'hbkg', 'var' )
@@ -120,6 +126,7 @@ for ii=1:numel( fin )-1
     %let's try to save a BIT of RAM
     if numel( spectra{ii} ) > numel( data )
         spectra{ii} = spectra{ii}( randperm( numel( spectra{ii} ), numel( data ) ) );
+        disp( ['Spectrum in file "',fin{ii},'" loaded and cut to measure'] );
     end
 end
 
@@ -139,8 +146,9 @@ ohf = @(p) xb_op_cbi( p, icbf );
 for ii=1:numel( spectra )
     spectra(ii) = cutter( spectra{ii}, ohf, hor_field );
 end
+disp( 'Spectra cut to front XB.' );
 
-spc_pees = 0.001*ones( 1, numel( spectra ) ); 
+if ~exist( 'spc_pees', 'var' ); spc_pees = ones( 1, numel( spectra ) ); end 
 if do_fast || do_fastish
     hspc = [];
     for ii=1:numel( spectra )
@@ -148,7 +156,7 @@ if do_fast || do_fastish
         hspc = [hspc; hist( nrg, binZ )];
     end
     if do_fast; spc_model = @( pees ) hybridizer_fast( pees, hspc, hbkg_f );
-    else if do_fastish;
+    elseif do_fastish;
         spc_model = @( pees ) hybridizer_fastish( pees, hspc, hbkg_f, binZ );
     end
 else

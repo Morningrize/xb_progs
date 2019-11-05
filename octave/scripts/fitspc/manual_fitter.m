@@ -11,9 +11,12 @@ function [pees, pee_errs] = manual_fitter( spc_pees, spc_model, h_data, ...
     if ~exist( 'minopts', 'var' )
         minopts = { 'lr', 1e-2, 'z', 1e-9, 'M', 1e5 };
     end
-    
+    preweight = 1e-4;
+
     pees = spc_pees;
-    L_model = __make_model( h_data, spc_model, extremes );
+    L_model = __make_model( h_data, spc_model, extremes, preweight );
+    %realistically, this is only going to happen between 0 and 1
+    pcage = [ones( 1, numel( pees ) );zeros( 1, numel( pees ) )];
     
     warning off;
 
@@ -27,32 +30,44 @@ function [pees, pee_errs] = manual_fitter( spc_pees, spc_model, h_data, ...
                 __display_halp();
             case { 'd', 'draw' }
                 %redraw the plot
-                __draw( binZ, spc_model( pees ), h_data, extremes,  'redraw' );
+                __draw( binZ, spc_model( preweight*pees ), h_data, extremes,  'redraw' );
             case { 'show' }
-                L_model = __make_model( h_data, spc_model,  extremes );
+                L_model = __make_model( h_data, spc_model, extremes, preweight );
                 disp( ['Jval           ',num2str( L_model( pees ))] );
                 disp( ['Pees           ',num2str( pees )] );
+                disp( ['Preweight      ',num2str( preweight )] );
                 Jcov = xb_covariance( L_model, pees  );
                 disp( 'Pees STD errors ' );
                 disp( num2str( sqrt( diag( Jcov ) ) ) );
             case { 'p', 'parameters' }
-                pees = __set_pees( opts );
+                if isempty( opts ); disp pees;
+                else pees = __set_pees( opts ); end
+            case { 'pw', 'preweight' }
+                if isempty( opts ); disp preweight;
+                else preweight = str2num( opts{1} ); end
+            case { 'c', 'constraint' }
+                if isempty( opts ); disp( pcage );
+                else try
+                    pcage = [opts{2}*ones( 1, numel( pees ) );opts{1}*ones( 1, numel( pees ) )];
+                catch
+                    warning( 'Inconsistent constraint format!' );
+                end end
             case { 'r', 'run' }
                 L_model = @( p ) log( max( spc_model( p ), 1 ) );
-                [pees, jval, rc] = xb_gradient_descent( L_model, pees, minopts );
+                [pees, jval, rc] = xb_constrained_gradient_descent( L_model, pees, pcage, minopts );
             case { 'anr', 'animate-run' }
                 max_iter = minopts{6};
-                minopts{6} = round( max_iter/120 );
+                minopts{6} = ceil( max_iter/120 );
                 pees_last = pees;
-                for ii=1:round(max_iter/120):max_iter
-                    disp( ['Iterations to ',num2str( ii+10 )] );
-                    L_model = __make_model( h_data, spc_model,  extremes );
-                    [pees_last, jval, rc] = xb_gradient_descent( L_model, pees_last, minopts );
+                for ii=1:ceil(max_iter/120):max_iter
+                    disp( ['Iterations to ',num2str( ii+ceil(max_iter/120) )] );
+                    L_model = __make_model( h_data, spc_model, extremes, preweight );
+                    [pees_last, jval, rc] = xb_constrained_gradient_descent( L_model, pees_last, pcage, minopts );
                     disp( ['Current jval :', num2str( jval )] );
                     if ~isempty( opts ) && strcmp( opts{1}, 'sticky' )
-                        __draw( binZ, spc_model( pees_last ) , h_data, extremes );
+                        __draw( binZ, spc_model( preweight*pees_last ) , h_data, extremes );
                     else
-                        __draw( binZ, spc_model( pees_last ), h_data, extremes, 'redraw' );
+                        __draw( binZ, spc_model( preweight*pees_last ), h_data, extremes, 'redraw' );
                     end
                     sleep( 0.5 );
                 end
@@ -66,13 +81,13 @@ function [pees, pee_errs] = manual_fitter( spc_pees, spc_model, h_data, ...
                 pees_matrix = linspace( pees, pees_last, 120 );
                 for ii=1:120
                     disp( [ 'Parameters: ',num2str( pees_matrix(:,ii)' ) ] );
-                    L_model = __make_model( h_data, spc_model,  extremes );
+                    L_model = __make_model( h_data, spc_model, extremes, preweight );
                     jval = L_model( pees_matrix(:,ii) );
                     disp( ['Jval: ',num2str( jval )] );
                     if ~isempty( opts ) && strcmp( opts{end}, 'sticky' );
-                        __draw( binZ, spc_model( pees_matrix(:,ii) ), h_data, extremes );
+                        __draw( binZ, spc_model( preweight*pees_matrix(:,ii) ), h_data, extremes );
                     else
-                        __draw( binZ, spc_model( pees_matrix(:,ii) ) , h_data, extremes, 'redraw' );
+                        __draw( binZ, spc_model( preweight*pees_matrix(:,ii) ) , h_data, extremes, 'redraw' );
                     end
                     sleep( 0.5 )
                 end
@@ -142,9 +157,9 @@ function __draw( binZ, hmodel, hdata, extremes, mm )
 end
 
 %utility to make the model
-function model = __make_model( hdata, spc_model, extremes )
+function model = __make_model( hdata, spc_model, extremes, preweight )
     L_hdata = log( max( hdata, 1 ) );
-    L_spc_model = @( p ) log( max( spc_model( p ), 1 ) );
+    L_spc_model = @( p ) log( max( spc_model( preweight*p ), 1 ) );
     
     if ~exist( 'extremes' )
         model = @( p ) sum( norm( L_hdata - L_spc_model( p )) )/numel( h_data );
@@ -164,7 +179,9 @@ function __display_halp()
     disp( 'anr|animate-run    --> run the minimizer and show an animation of it.' );
     disp( 'ama|animate-manual --> set the parameters manually and animate it.' );
     disp( 'p|parameters [index p|p-vec]    --> set the parameters.' );
-    disp( 'x|extremes [e1 e2] --> view/set extremes.' );
+    disp( 'pw|preweight [number]           --> get/set the preweight.' );
+    disp( 'c|constraint [lower upper]      --> get/set the constraint.' );
+    disp( 'x|extremes [e1 e2] --> get/set extremes.' );
     disp( 'o|minopts [lr zr mi]    --> minimizer options' );
     disp( 'ok|OK              --> return.' );
 end
