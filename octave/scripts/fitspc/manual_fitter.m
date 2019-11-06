@@ -38,10 +38,15 @@ function [pees, pee_errs] = manual_fitter( spc_pees, spc_model, h_data, ...
                 disp( ['Preweight      ',num2str( preweight )] );
                 Jcov = xb_covariance( L_model, pees  );
                 disp( 'Pees STD errors ' );
-                disp( num2str( sqrt( diag( Jcov ) ) ) );
+                disp( num2str( abs( sqrt( diag( Jcov ) ) ) ) );
             case { 'p', 'parameters' }
-                if isempty( opts ); disp pees;
+                oldpees = pees;
+                if isempty( opts ); disp( pees );
                 else pees = __set_pees( opts ); end
+                if numel( pees ) ~= numel( oldpees )
+                    disp( ['The correct number of pees is ',num2str( numel( oldpees ) )] );
+                    pees = oldpees;
+                end
             case { 'pw', 'preweight' }
                 if isempty( opts ); disp preweight;
                 else preweight = str2num( opts{1} ); end
@@ -76,6 +81,7 @@ function [pees, pee_errs] = manual_fitter( spc_pees, spc_model, h_data, ...
                     case { 'y', 'Y', 'yes', 'Yes' }
                         pees = pees_last;
                 end
+                minopts{6} = max_iter;
             case { 'ama', 'animate-manual' }
                 pees_last = __set_pees( opts(1) );
                 pees_matrix = linspace( pees, pees_last, 120 );
@@ -128,7 +134,8 @@ function [pees, pee_errs] = manual_fitter( spc_pees, spc_model, h_data, ...
         pees = pees_last;
     end
     J_cov = xb_covariance( L_model, pees );
-    pee_errs = sqrt( diag( J_cov ) );
+    pee_errs = preweight*abs( sqrt( diag( J_cov ) ) );
+    pees *= preweight;
 
     warning on;
 end

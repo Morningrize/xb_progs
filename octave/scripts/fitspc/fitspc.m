@@ -17,7 +17,9 @@ extremes = [1,241];
 fin = {};
 minopts = {};
 do_fast = false;
+fixed_mt = true;
 fit_engine = @fitter;
+fbkg = '/home/gatto/PhD_local/xb_data/bkg-sweep-narrow/sn-132/output_files/r9xx_native_hybrid_bkg.kb.dp.xb';
 
 function val = __check_arg( option, args, ii )
     try
@@ -69,9 +71,11 @@ for ii=2:numel( args )
                 otherwise
                     error( [loader,' is an unsupported format'] );
             end
-        case { '-B', '--atomic-background' }
+        case { '-B', '--use-background' }
             fbkg = __check_arg( '-B', args, ii );
-        case{ '-b', '--binnage' }
+        case { '-nB', '--no-background' }
+            clear fbkg;
+        case { '-b', '--binnage' }
             try
                 binZ = sscanf( args{ii+1}, '[%f:%f:%f]' )
             catch
@@ -93,12 +97,31 @@ for ii=2:numel( args )
             minotps = [minopts, 'M', str2num( __check_arg( '-m.M', args, ii ) )];
         case { '-M', '--manual' }
             fit_engine = @manual_fitter;
+        case { '-nMT', '--no-fixed-MT' }
+            fixed_mt = false;
     end
+end
+
+if ~fixed_mt && ~do_fast && ~do_fastish
+    error( 'MT must be fixed to resample the event spectra.' )
 end
 
 %Assuming the data file is the last of the list.
 data = loader( fin{end} );
 disp( 'Data on board!' );
+fin = fin(1:end-1);
+[h_data, ~, herr_data] = xb_make_spc_ffb( data, binZ );
+
+spectra = {};
+for ii=1:numel( fin )
+    spectra(ii) = loader( fin{ii} );
+    %let's try to save a BIT of RAM
+    if numel( spectra{ii} ) > numel( data )
+        spectra{ii} = spectra{ii}( randperm( numel( spectra{ii} ), numel( data ) ) );
+    end
+    disp( ['Spectrum in file "',fin{ii},'" loaded and cut to measure'] );
+end
+
 if exist( 'fbkg', 'var' )
     bkg = loader( fbkg );
     bkg = bkg( randperm( numel( bkg ), numel( data ) ) );
@@ -109,28 +132,30 @@ end
 %build the empty target model
 %NOTE: this is valid only for the front of the CB.
 %      full and back may become available later.
-load /home/gatto/PhD_local/xb_data/xb/empty/9xx_AR/v01/empty-target-functional
-mtf = mt_scaler_2s133s( numel( data ) )*mt_model( binZ, pees_front );
-disp( 'MT target model loaded.' );
+if fixed_mt
+    load /home/gatto/PhD_local/xb_data/xb/empty/9xx_AR/v01/empty-target-functional
+    mtf = mt_scaler_2s133s( numel( data ) )*mt_model( binZ, pees_front );
+    disp( 'MT target model loaded.' );
+else
+    spectra(end+1) = loader( '/home/gatto/PhD_local/xb_data/xb/empty/9xx_AR/v01/r9xx_mt_132in_2s133s.kb.dp.xb' );
+    disp( 'MT added to the spectra.' );
+end
+
+icbf = [xb_ball_neigh( 81, 5 ).i];
+ohf = @(p) xb_op_cbi( p, icbf );
+for ii=1:numel( spectra )
+    spectra(ii) = cutter( spectra{ii}, ohf, hor_field );
+end
+disp( 'Spectra cut to front XB.' );
 
 %make the bkg
-if exist( 'hbkg', 'var' )
+if exist( 'hbkg', 'var' ) && fixed_mt
     hbkg_f = hbkg{2} + round( mtf );
-else
+elseif ~exist( 'hbkg', 'var' ) && fixed_mt
     hbkg_f = round( mtf );
+elseif exist( 'hbkg', 'var' ) && ~fixed_mt
+    hbkg_f = hbkg{2};
 end
-
-spectra = {};
-for ii=1:numel( fin )-1
-    spectra(ii) = loader( fin{ii} );
-    %let's try to save a BIT of RAM
-    if numel( spectra{ii} ) > numel( data )
-        spectra{ii} = spectra{ii}( randperm( numel( spectra{ii} ), numel( data ) ) );
-        disp( ['Spectrum in file "',fin{ii},'" loaded and cut to measure'] );
-    end
-end
-
-[h_data, ~, herr_data] = xb_make_spc_ffb( data, binZ );
 
 %TODO list:
 % 0) cut all the spectra to only contain the _front_
@@ -140,20 +165,16 @@ end
 % 3) fit 1-2 to the data (also, a part of the data if needed).
 % 4) Do all this efficiently.
 
-icbf = [xb_ball_neigh( 81, 5 ).i];
-ohf = @(p) xb_op_cbi( p, icbf );
-
-for ii=1:numel( spectra )
-    spectra(ii) = cutter( spectra{ii}, ohf, hor_field );
-end
-disp( 'Spectra cut to front XB.' );
-
 if ~exist( 'spc_pees', 'var' ); spc_pees = ones( 1, numel( spectra ) ); end 
 if do_fast || do_fastish
     hspc = [];
     for ii=1:numel( spectra )
         nrg = nrgizer( spectra{ii} );
         hspc = [hspc; hist( nrg, binZ )];
+    end
+    if ~fixed_mt
+        pkg load signal
+        hspc(end,:) = sgolayfilt( [hspc(end,1:end-1),0], 2, 21 );
     end
     if do_fast; spc_model = @( pees ) hybridizer_fast( pees, hspc, hbkg_f );
     elseif do_fastish;
@@ -170,6 +191,10 @@ else
                                        binZ, minopts );
 end
 
-%writeout time
-save( fout, 'spc_pees', 'spc_errs', 'spc_model' );
+%make also the graph (the extra mile bit)
+spc_modelerr = @( p ) sqrt( hybridizer_fast( p.^2, hspc.^2 ) + hbkg_f );
+xb_save_spc( fout, { h_data{2}, spc_model( spc_pees ) }, ...
+             { binZ, binZ }, { sqrt( h_data{2} ), spc_modelerr( spc_errs ) } );
 
+%writeout time
+save( fout, 'fin', 'spc_pees', 'spc_errs', 'spc_model', 'spc_modelerr' );
