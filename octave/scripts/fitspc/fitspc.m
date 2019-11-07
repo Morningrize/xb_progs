@@ -185,10 +185,10 @@ else
 end
 
 if isempty( minopts )
-    [spc_pees, spc_errs] = fit_engine( spc_pees, spc_model, h_data{2}, extremes, binZ );
+    [spc_pees, spc_errs, chisq] = fit_engine( spc_pees, spc_model, h_data{2}, extremes, binZ );
 else
-    [spc_pees, spc_errs] = fit_engine( spc_pees, spc_model, h_data{2}, extremes, ...
-                                       binZ, minopts );
+    [spc_pees, spc_errs, chisq] = fit_engine( spc_pees, spc_model, h_data{2}, extremes, ...
+                                               binZ, minopts );
 end
 
 %make also the graph (the extra mile bit)
@@ -197,4 +197,4 @@ xb_save_spc( fout, { h_data{2}, spc_model( spc_pees ) }, ...
              { binZ, binZ }, { sqrt( h_data{2} ), spc_modelerr( spc_errs ) } );
 
 %writeout time
-save( fout, 'fin', 'spc_pees', 'spc_errs', 'spc_model', 'spc_modelerr' );
+save( fout, 'fin', 'spc_pees', 'spc_errs', 'spc_model', 'spc_modelerr', 'chisq' );

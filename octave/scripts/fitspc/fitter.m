@@ -1,7 +1,7 @@
 %This function does the fitting of a spectrum on top of a dataset.
 %Usually the spectrum comes out of simulation and the data from a detector.
 %
-% [pees, pee_errs] = fitter( spc_pees, spc_model, h_data, extremes, binZ, minopts )
+% [pees, pee_errs, chisq] = fitter( spc_pees, spc_model, h_data, extremes, binZ, minopts )
 %
 %parameters:
 % spc_pees: the parameters to build the hybrid spectrum
@@ -11,9 +11,10 @@
 %returns
 % pees : the result of the fit.
 % pee_err : the errors thereupon (still experimental)
+% chisq : the reduced chi squared of the fit
 
-function [pees, pee_errs] = fitter( spc_pees, spc_model, h_data, extremes, ...
-                                    binZ, minopt )
+function [pees, pee_errs, chisq] = fitter( spc_pees, spc_model, h_data, extremes, ...
+                                           binZ, minopt )
     L_h_data = log( max( h_data, 1 ) );
     L_spc_model = @( p ) log( max( spc_model( p ), 1 ) );
     
@@ -34,5 +35,7 @@ function [pees, pee_errs] = fitter( spc_pees, spc_model, h_data, extremes, ...
     %NOTE: this is still experimental and might very well be BS
     J_cov = xb_covariance( model, pees );
     pee_errs = sqrt( diag( J_cov ) );
+    chisq = xb_goodness_of_fit( hdata(extremes(1):extremes(2)), ...
+                                spc_model( pees )(extremes(1):extremes(2)) )/(numel( pees )-2);
 end
         

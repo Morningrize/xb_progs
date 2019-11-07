@@ -1,13 +1,13 @@
 %this thing is supposed to drive a fit. Manually. The interface shall be the same as "fitter"
 %The experience: very different.
 %
-% [pees, pees_errs] = manual_fitter( spc_pees, spc_model, h_data, ...
-%                                    extrermes, binZ, minopts )
+% [pees, pees_errs, chisq] = manual_fitter( spc_pees, spc_model, h_data, ...
+%                                           extrermes, binZ, minopts )
 %
 %Also parameters and return values are the same.
 
-function [pees, pee_errs] = manual_fitter( spc_pees, spc_model, h_data, ...
-                                           extremes, binZ, minopts )
+function [pees, pee_errs, chisq] = manual_fitter( spc_pees, spc_model, h_data, ...
+                                                  extremes, binZ, minopts )
     if ~exist( 'minopts', 'var' )
         minopts = { 'lr', 1e-2, 'z', 1e-9, 'M', 1e5 };
     end
@@ -34,6 +34,8 @@ function [pees, pee_errs] = manual_fitter( spc_pees, spc_model, h_data, ...
             case { 'show' }
                 L_model = __make_model( h_data, spc_model, extremes, preweight );
                 disp( ['Jval           ',num2str( L_model( pees ))] );
+                disp( ['Chi2           ',num2str( __chisq( h_data, spc_model( preweight*pees ), ...
+                                                           extremes )/(numel(pees)-1) )] );
                 disp( ['Pees           ',num2str( pees )] );
                 disp( ['Preweight      ',num2str( preweight )] );
                 Jcov = xb_covariance( L_model, pees  );
@@ -42,7 +44,7 @@ function [pees, pee_errs] = manual_fitter( spc_pees, spc_model, h_data, ...
             case { 'p', 'parameters' }
                 oldpees = pees;
                 if isempty( opts ); disp( pees );
-                else pees = __set_pees( opts ); end
+                else pees = __set_pees( oldpees, opts ); end
                 if numel( pees ) ~= numel( oldpees )
                     disp( ['The correct number of pees is ',num2str( numel( oldpees ) )] );
                     pees = oldpees;
@@ -69,12 +71,14 @@ function [pees, pee_errs] = manual_fitter( spc_pees, spc_model, h_data, ...
                     L_model = __make_model( h_data, spc_model, extremes, preweight );
                     [pees_last, jval, rc] = xb_constrained_gradient_descent( L_model, pees_last, pcage, minopts );
                     disp( ['Current jval :', num2str( jval )] );
+                    disp( ['Current rc   :', num2str( rc )] );
                     if ~isempty( opts ) && strcmp( opts{1}, 'sticky' )
                         __draw( binZ, spc_model( preweight*pees_last ) , h_data, extremes );
                     else
                         __draw( binZ, spc_model( preweight*pees_last ), h_data, extremes, 'redraw' );
                     end
                     sleep( 0.5 );
+                    if rc == 0; break; end
                 end
                 isok = input( 'accept?> ', 's' );
                 switch( isok )
@@ -136,17 +140,23 @@ function [pees, pee_errs] = manual_fitter( spc_pees, spc_model, h_data, ...
     J_cov = xb_covariance( L_model, pees );
     pee_errs = preweight*abs( sqrt( diag( J_cov ) ) );
     pees *= preweight;
+    chisq = __chisq( h_data, spc_model( preweight*pees ), extremes )/(numel( pees )-1);
 
     warning on;
 end
 
 %utility to set parameters
-function pees = __set_pees( opts )
+function pees = __set_pees( pees, opts )
     if numel( opts ) == 2
         pees(str2num( opts{1} )) = str2num( opts{2} );
     elseif numel( opts ) == 1
         eval( ['pees = ',opts{1},';'] );
     end
+end
+
+%do the chisquared
+function chisq = __chisq( hdata, hmodel, extremes )
+    chisq = xb_goodness_of_fit( hdata(extremes(1):extremes(2)), hmodel(extremes(1):extremes(2)) );
 end
 
 %utility to draw

@@ -36,3 +36,18 @@ Wed  6 Nov 16:03:13 CET 2019: This is getting stoopid now.
 Wed  6 Nov 16:27:43 CET 2019: Ok, seems to be working. Not converging, but working yes --with the MT thingie... now tryng the full fit.
 Wed  6 Nov 16:46:43 CET 2019: Last bug to squash, hopefully: the pees setting number. It killed me already twice
 Wed  6 Nov 16:46:54 CET 2019: That's it: committing and then this can carry on at home.
+Thu  7 Nov 10:06:46 CET 2019: I'm not overwhealmend with the performance of the fitter with the floating MT. Let's go back to the hard one.
+Thu  7 Nov 10:07:32 CET 2019: After I tried with the fastish hybridizer (which will be glacially slow)
+Thu  7 Nov 10:38:19 CET 2019: Ok, stop faffing: production starts now
+Thu  7 Nov 10:38:51 CET 2019: I'm doing various versions for various fit methods. r0_v00 is -F
+Thu  7 Nov 12:53:53 CET 2019: sneakily added a chi squared for the fits, so that I have some way to measure how goo (or crappy) they are.
+Thu  7 Nov 13:13:24 CET 2019: not so sneakily: how many syntax errors can I do in two fucking lines of code?
+Thu  7 Nov 14:13:11 CET 2019: the v00 suffix is shaping to mean '-F'
+Thu  7 Nov 14:25:48 CET 2019: must fix the errors on the fit parameters... LATER
+Thu  7 Nov 14:26:25 CET 2019: and the chi2 is broken. As unzual.
+Thu  7 Nov 15:09:29 CET 2019: Doing the fitting with the fastish. These will be in the v01 files
+Thu  7 Nov 15:38:20 CET 2019: This seems clueless with so few counts... shall we try once with an amplified spectrum?
+Thu  7 Nov 15:38:37 CET 2019: No, then it converges to the -F algo
+Thu  7 Nov 15:39:00 CET 2019: But the error estimation here works. For some reason.
+Thu  7 Nov 15:48:59 CET 2019: No, this ain't going anywhere. And it does that slowly.
+Thu  7 Nov 16:16:34 CET 2019: Ok then, that's it. I'm off for today, I'll address the hydeousness of the errors tomorrow.
