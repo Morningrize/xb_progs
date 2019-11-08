@@ -35,7 +35,7 @@ function [pees, pee_errs, chisq] = fitter( spc_pees, spc_model, h_data, extremes
     %NOTE: this is still experimental and might very well be BS
     J_cov = xb_covariance( model, pees );
     pee_errs = sqrt( diag( J_cov ) );
-    chisq = xb_goodness_of_fit( hdata(extremes(1):extremes(2)), ...
-                                spc_model( pees )(extremes(1):extremes(2)) )/(numel( pees )-2);
+    chisq = xb_goodness_of_fit( h_data(extremes(1):extremes(2)), ...
+                                spc_model( pees )(extremes(1):extremes(2)) )/(numel( pees )-1);
 end
         

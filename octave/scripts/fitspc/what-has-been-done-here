@@ -51,3 +51,10 @@ Thu  7 Nov 15:38:37 CET 2019: No, then it converges to the -F algo
 Thu  7 Nov 15:39:00 CET 2019: But the error estimation here works. For some reason.
 Thu  7 Nov 15:48:59 CET 2019: No, this ain't going anywhere. And it does that slowly.
 Thu  7 Nov 16:16:34 CET 2019: Ok then, that's it. I'm off for today, I'll address the hydeousness of the errors tomorrow.
+Fri  8 Nov 16:13:28 CET 2019: repeating the whole thing (only in -F) with 4.33 and 4.66 MeV added.
+Fri  8 Nov 16:13:42 CET 2019: Errors are still humongous.
+Fri  8 Nov 16:27:04 CET 2019: What if I accept these errors (the method is sound) and say: they are the _variance_ of the parameters --> the error on the expected value (the parameter itself) will be the variance OVER the square root of the number of points, 201 in this case?
+Fri  8 Nov 16:27:30 CET 2019: They will still be big, BUT at least not ridiculous.
+Fri  8 Nov 16:34:09 CET 2019: From r2 this is included. r0 and r1 should be corrected (just keep in mind that you have to divide the errors by sqrt(201) ).
+Fri  8 Nov 16:41:37 CET 2019: Done. The pictures are not updated, tho.
+Fri  8 Nov 16:55:26 CET 2019: Ok, rest at home/tomorrow. Another nice weekend at the PC.

@@ -5,10 +5,10 @@
 %arguments:
 % -- function_handle : is a function handle that accepts a vector as an argument.
 % -- X0 : is the point at which the gradient will be calculated.
-% -- delta : optionally, it's how small the step will be. Default is 1e-5.
+% -- delta : optionally, it's how small the step will be. Default is 1e-10.
 
 function grad = xb_gradient( fh, x0, delta )
-    if ~exist( 'delta', 'var' ); delta = 1e-5; end
+    if ~exist( 'delta', 'var' ); delta = 1e-10; end
 
     %dx can also be calculated relatively, but it should not be necessary!
     %dx = (x0*delta)(:);

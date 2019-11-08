@@ -14,7 +14,6 @@ function [pees, pee_errs, chisq] = manual_fitter( spc_pees, spc_model, h_data, .
     preweight = 1e-4;
 
     pees = spc_pees;
-    L_model = __make_model( h_data, spc_model, extremes, preweight );
     %realistically, this is only going to happen between 0 and 1
     pcage = [ones( 1, numel( pees ) );zeros( 1, numel( pees ) )];
     
@@ -24,7 +23,7 @@ function [pees, pee_errs, chisq] = manual_fitter( spc_pees, spc_model, h_data, .
     while go_on
         user_says = input( 'mf> ', 's' );
         [cmd, opts] = mf_parser( user_says );
-        
+        L_model = __make_model( h_data, spc_model, extremes, preweight );
         switch( cmd )
             case { 'h', 'help', 'HALP!' }
                 __display_halp();
@@ -32,15 +31,14 @@ function [pees, pee_errs, chisq] = manual_fitter( spc_pees, spc_model, h_data, .
                 %redraw the plot
                 __draw( binZ, spc_model( preweight*pees ), h_data, extremes,  'redraw' );
             case { 'show' }
-                L_model = __make_model( h_data, spc_model, extremes, preweight );
                 disp( ['Jval           ',num2str( L_model( pees ))] );
                 disp( ['Chi2           ',num2str( __chisq( h_data, spc_model( preweight*pees ), ...
                                                            extremes )/(numel(pees)-1) )] );
-                disp( ['Pees           ',num2str( pees )] );
+                disp( ['Pees           ',num2str( preweight*pees )] );
                 disp( ['Preweight      ',num2str( preweight )] );
                 Jcov = xb_covariance( L_model, pees  );
-                disp( 'Pees STD errors ' );
-                disp( num2str( abs( sqrt( diag( Jcov ) ) ) ) );
+                disp( 'Pees standard errors: ' );
+                disp( num2str( abs( sqrt( diag( Jcov )' )/sqrt( extremes(2) - extremes(1) ) ) ) );
             case { 'p', 'parameters' }
                 oldpees = pees;
                 if isempty( opts ); disp( pees );
@@ -60,7 +58,6 @@ function [pees, pee_errs, chisq] = manual_fitter( spc_pees, spc_model, h_data, .
                     warning( 'Inconsistent constraint format!' );
                 end end
             case { 'r', 'run' }
-                L_model = @( p ) log( max( spc_model( p ), 1 ) );
                 [pees, jval, rc] = xb_constrained_gradient_descent( L_model, pees, pcage, minopts );
             case { 'anr', 'animate-run' }
                 max_iter = minopts{6};
@@ -68,7 +65,6 @@ function [pees, pee_errs, chisq] = manual_fitter( spc_pees, spc_model, h_data, .
                 pees_last = pees;
                 for ii=1:ceil(max_iter/120):max_iter
                     disp( ['Iterations to ',num2str( ii+ceil(max_iter/120) )] );
-                    L_model = __make_model( h_data, spc_model, extremes, preweight );
                     [pees_last, jval, rc] = xb_constrained_gradient_descent( L_model, pees_last, pcage, minopts );
                     disp( ['Current jval :', num2str( jval )] );
                     disp( ['Current rc   :', num2str( rc )] );
@@ -91,7 +87,6 @@ function [pees, pee_errs, chisq] = manual_fitter( spc_pees, spc_model, h_data, .
                 pees_matrix = linspace( pees, pees_last, 120 );
                 for ii=1:120
                     disp( [ 'Parameters: ',num2str( pees_matrix(:,ii)' ) ] );
-                    L_model = __make_model( h_data, spc_model, extremes, preweight );
                     jval = L_model( pees_matrix(:,ii) );
                     disp( ['Jval: ',num2str( jval )] );
                     if ~isempty( opts ) && strcmp( opts{end}, 'sticky' );
@@ -138,7 +133,7 @@ function [pees, pee_errs, chisq] = manual_fitter( spc_pees, spc_model, h_data, .
         pees = pees_last;
     end
     J_cov = xb_covariance( L_model, pees );
-    pee_errs = preweight*abs( sqrt( diag( J_cov ) ) );
+    pee_errs = preweight*abs( sqrt( diag( J_cov )' )/sqrt( extremes(2) - extremes(1) ) );
     pees *= preweight;
     chisq = __chisq( h_data, spc_model( preweight*pees ), extremes )/(numel( pees )-1);
 
