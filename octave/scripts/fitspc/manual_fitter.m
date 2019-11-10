@@ -32,8 +32,8 @@ function [pees, pee_errs, chisq] = manual_fitter( spc_pees, spc_model, h_data, .
                 __draw( binZ, spc_model( preweight*pees ), h_data, extremes,  'redraw' );
             case { 'show' }
                 disp( ['Jval           ',num2str( L_model( pees ))] );
-                disp( ['Chi2           ',num2str( __chisq( h_data, spc_model( preweight*pees ), ...
-                                                           extremes )/(numel(pees)-1) )] );
+                disp( ['Chi2           ',num2str( __chisq( h_data, spc_model, preweight*pees, ...
+                                                           extremes ))] );
                 disp( ['Pees           ',num2str( preweight*pees )] );
                 disp( ['Preweight      ',num2str( preweight )] );
                 Jcov = xb_covariance( L_model, pees  );
@@ -135,7 +135,7 @@ function [pees, pee_errs, chisq] = manual_fitter( spc_pees, spc_model, h_data, .
     J_cov = xb_covariance( L_model, pees );
     pee_errs = preweight*abs( sqrt( diag( J_cov )' )/sqrt( extremes(2) - extremes(1) ) );
     pees *= preweight;
-    chisq = __chisq( h_data, spc_model( preweight*pees ), extremes )/(numel( pees )-1);
+    chisq = __chisq( h_data, spc_model, pees, extremes );
 
     warning on;
 end
@@ -150,8 +150,11 @@ function pees = __set_pees( pees, opts )
 end
 
 %do the chisquared
-function chisq = __chisq( hdata, hmodel, extremes )
-    chisq = xb_goodness_of_fit( hdata(extremes(1):extremes(2)), hmodel(extremes(1):extremes(2)) );
+function chisq = __chisq( hdata, hmodel, pees, extremes )
+    hmodel = hmodel( pees );
+    chisq = xb_goodness_of_fit( hdata(extremes(1):extremes(2)), ...
+	                        hmodel(extremes(1):extremes(2)), ...
+			        numel( pees ) );
 end
 
 %utility to draw

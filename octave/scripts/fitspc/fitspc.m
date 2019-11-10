@@ -19,6 +19,7 @@ minopts = {};
 do_fast = false;
 fixed_mt = true;
 fit_engine = @fitter;
+do_amp = 1;
 fbkg = '/home/gatto/PhD_local/xb_data/bkg-sweep-narrow/sn-132/output_files/r9xx_native_hybrid_bkg.kb.dp.xb';
 
 function val = __check_arg( option, args, ii )
@@ -99,6 +100,8 @@ for ii=2:numel( args )
             fit_engine = @manual_fitter;
         case { '-nMT', '--no-fixed-MT' }
             fixed_mt = false;
+        case { '-A', '--data-amp' }
+            do_amp = str2num( __check_arg( '-a', args, ii ) );
     end
 end
 
@@ -111,21 +114,31 @@ data = loader( fin{end} );
 disp( 'Data on board!' );
 fin = fin(1:end-1);
 [h_data, ~, herr_data] = xb_make_spc_ffb( data, binZ );
+if do_amp ~= 1
+    for ii=1:3
+        [h_data(ii), herr_data(ii)] = xb_spcamp( h_data{ii}, binZ, do_amp );
+    end
+    disp( ['Data amplified by ',num2str(do_amp)] );
+end
 
 spectra = {};
 for ii=1:numel( fin )
     spectra(ii) = loader( fin{ii} );
     %let's try to save a BIT of RAM
-    if numel( spectra{ii} ) > numel( data )
-        spectra{ii} = spectra{ii}( randperm( numel( spectra{ii} ), numel( data ) ) );
+    if numel( spectra{ii} ) > numel( data )*do_amp
+        spectra{ii} = spectra{ii}( randperm( numel( spectra{ii} ), numel( data )*do_amp ) );
     end
     disp( ['Spectrum in file "',fin{ii},'" loaded and cut to measure'] );
 end
 
 if exist( 'fbkg', 'var' )
     bkg = loader( fbkg );
-    bkg = bkg( randperm( numel( bkg ), numel( data ) ) );
     [hbkg, ~, herrbkg] = xb_make_spc_ffb( bkg, binZ );
+    if numel( bkg ) < numel( data )*do_amp
+        for ii=1:3
+            [hbkg(ii), herrbkg(ii)] = xb_spcamp( hbkg{ii}, binZ, numel(data)/numel(bkg)*do_amp );
+        end
+    end
     disp( 'Background loaded.' );
 end
 
@@ -134,7 +147,7 @@ end
 %      full and back may become available later.
 if fixed_mt
     load /home/gatto/PhD_local/xb_data/xb/empty/9xx_AR/v01/empty-target-functional
-    mtf = mt_scaler_2s133s( numel( data ) )*mt_model( binZ, pees_front );
+    mtf = mt_scaler_2s133s( numel( data )*do_amp )*mt_model( binZ, pees_front );
     disp( 'MT target model loaded.' );
 else
     spectra(end+1) = loader( '/home/gatto/PhD_local/xb_data/xb/empty/9xx_AR/v01/r9xx_mt_132in_2s133s.kb.dp.xb' );
