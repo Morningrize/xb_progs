@@ -45,10 +45,10 @@ function xs = xb_rp2xs( rp, thk, density_or_material )
     if iscell( rp )
         xs = cell( size( rp ) );
         for ii=1:length( rp )
-            xs(ii) = rp{ii}.*(mmass/(trho*N_a)*1e24); %already in barnZ.
+            xs(ii) = rp{ii}.*(mmass/(thk*N_a)*1e24); %already in barnZ.
         end
     else
-        xs = rp.*(mmass/(trho*N_a)*1e24); %already in barnZ.
+        xs = rp.*(mmass/(thk*N_a)*1e24); %already in barnZ.
     end
 end
     

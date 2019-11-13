@@ -38,7 +38,7 @@ function [xcc, components] = xb_xcc( b_beam, e_ext, xs_gam_eX )
 	nfb = nfb(:);
 	components = xs_gam_eX( e_ext, b_beam );
 	
-	xcc = sum( 1./e_ext.*components.*nfb, 2 );
+	xcc = sum( components.*nfb, 2 ); %the result is in millibarn!!!
 end
 
 function sigma = __xs_GDR_gam( nrg, bt )

@@ -47,7 +47,7 @@ function __write_data( fname, bins, hst, herr, varargin )
     end
     __write_header( of, varargin );
 
-    fprintf( of, '%f %f %f\n', [bins(:), hst(:), herr(:)]' );
+    fprintf( of, '%.10f %.10f %.10f\n', [bins(:), hst(:), herr(:)]' );
     fflush( of );
     fclose( of );
 end
