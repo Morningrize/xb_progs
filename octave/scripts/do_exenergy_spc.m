@@ -31,14 +31,14 @@ nb_data = numel( data );
 %NOTE: this is the only place where the Tpats will have some sort of importance. I need to give it a brughing over
 %      and settle on a bunch of triggers I actually want to use for event scaling (I already don't use them
 %      for selection... I just don't want to be screwed up by them).
-scalers = xb_tpat2scaler( data, 0x20 );
+%scalers = xb_tpat2scaler( data, 0x20 );
 sys_scaler = (0.84*0.72*0.94*0.84)^-1*0.71*0.97; %global efficiency^-1*global specificity
 sys_relerr = 0.09; %this has to be reviewed.
 
 %I could ignore the scalers here, but I'm still not sure. Anyhow, they are saved
 %and I can divide the RP and XS by them.
-rp = counts/nb_data*scalers.a*sys_scaler;
-rp_errs = c_errs/nb_data*scalers.a*sys_scaler;
+rp = counts/nb_data*sys_scaler;
+rp_errs = c_errs/nb_data*sys_scaler;
 rp_syserr = rp*sys_relerr;
 
 xs = xb_rp2xs( rp, 1.132, 'lead' );
