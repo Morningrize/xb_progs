@@ -91,11 +91,11 @@ for ii=2:numel( args )
 	case { '-f', '--fastish' }
             do_fastish = true;
         case { '-m.lr', '--minimizer.learning-rate' }
-            minotps = [minopts, 'lr', str2num( __check_arg( '-m.lr', args, ii ) )];
+            minopts = [minopts, 'lr', str2num( __check_arg( '-m.lr', args, ii ) )];
         case { '-m.zr', '--minimizer.zero-is' }
-            minotps = [minopts, 'z', str2num( __check_arg( '-m.z', args, ii ) )];
+            minopts = [minopts, 'z', str2num( __check_arg( '-m.z', args, ii ) )];
         case { '-m.M', '--minimizer.max-iter' }
-            minotps = [minopts, 'M', str2num( __check_arg( '-m.M', args, ii ) )];
+            minopts = [minopts, 'M', str2num( __check_arg( '-m.M', args, ii ) )];
         case { '-M', '--manual' }
             fit_engine = @manual_fitter;
         case { '-nMT', '--no-fixed-MT' }
@@ -206,8 +206,10 @@ end
 
 %make also the graph (the extra mile bit)
 spc_modelerr = @( p ) sqrt( hybridizer_fast( p.^2, hspc.^2 ) + hbkg_f );
+spc_err_zeroed = zeros( size( spc_errs ) );
+spc_err_zeroed( find( spc_pees ) ) = spc_errs( find( spc_pees ) );
 xb_save_spc( fout, { h_data{2}, spc_model( spc_pees ) }, ...
-             { binZ, binZ }, { sqrt( h_data{2} ), spc_modelerr( spc_errs ) } );
+             { binZ, binZ }, { sqrt( h_data{2} ), spc_modelerr( spc_err_zeroed ) } );
 
 %writeout time
 save( fout, 'fin', 'spc_pees', 'spc_errs', 'spc_model', 'spc_modelerr', 'chisq' );

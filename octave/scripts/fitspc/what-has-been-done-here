@@ -66,3 +66,15 @@ Sun 10 Nov 11:53:49 CET 2019: Ok, DHAVE the script. It works, I don't remember h
 Sun 10 Nov 12:15:36 CET 2019: Seems that that should be it... will look a bit more into it. But it's just a game of scale factors right now.
 Sun 10 Nov 18:31:36 CET 2019: Did the graphs. There are some error bars to review (all those of the cross sections and possibly the ones of the data)
 Sun 10 Nov 18:32:01 CET 2019: But it's finished, essentially: tomorrow I'm writing the final things.
+Sat 16 Nov 23:20:16 CET 2019: Doing a buttload of simulations, BTW. Tomorrow it's gona be a fit fest.
+Sun 17 Nov 22:30:59 CET 2019: Started production on the v00 fits. These will go inside the average for aplha_D
+Sun 17 Nov 22:31:21 CET 2019: teh v01 fits will not be done today, very probably, also because they are hypoteticals
+Sun 17 Nov 22:31:51 CET 2019: v01 changed meaning, BTW: it's the ones with the noise already inside. Which I don't know how badly they would try to converge
+Mon 18 Nov 01:11:48 CET 2019: last realization... it was worth it.
+Mon 18 Nov 01:12:12 CET 2019: Tomorrow (or later) I'll try also with the hybridised ones, and without background.
+Mon 18 Nov 01:18:35 CET 2019: Down the rabbit hole: let's see how it looks like without the background added, but included in the cascades
+Mon 18 Nov 01:19:00 CET 2019: Which is the way I wanted to do it but... yeah: it is a longer shot and very time consuming.
+Mon 18 Nov 01:21:34 CET 2019: well, it is also slower to load the things
+Mon 18 Nov 01:23:01 CET 2019: No, I need to include the just background, and fit that as well
+Mon 18 Nov 01:26:53 CET 2019: Trying another thing
+Mon 18 Nov 01:57:00 CET 2019: Doing the hybrids WITH the background works. Now automating the thing and getting the hell to bed.
